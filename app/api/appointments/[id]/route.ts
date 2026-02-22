@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/mongodb";
+import { getAuthDoctor } from "@/lib/auth";
+import Appointment from "@/models/Appointment";
+import { calcEndTime } from "@/lib/appointmentUtils";
+
+// GET — Single appointment
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+    const doctorId = await getAuthDoctor(req);
+    const { id } = await params;
+
+    const appointment = await Appointment.findOne({ _id: id, doctorId })
+      .populate("clientId", "name phone email therapyType")
+      .lean();
+
+    if (!appointment) {
+      return NextResponse.json(
+        { error: "Appointment not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ appointment });
+  } catch (error) {
+    console.error("Get appointment error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch appointment" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT — Update appointment
+// scope: "single" | "future" | "all"
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+    const doctorId = await getAuthDoctor(req);
+    const { id } = await params;
+    const body = await req.json();
+    const { scope = "single", ...updates } = body;
+
+    // Recalculate endTime if startTime or duration changed
+    if (updates.startTime && updates.durationMins) {
+      updates.endTime = calcEndTime(
+        updates.startTime,
+        Number(updates.durationMins)
+      );
+    }
+
+    if (scope === "single") {
+      const appt = await Appointment.findOneAndUpdate(
+        { _id: id, doctorId },
+        { $set: updates },
+        { new: true }
+      );
+      if (!appt) {
+        return NextResponse.json(
+          { error: "Appointment not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({
+        message: "Appointment updated",
+        appointment: appt,
+      });
+    }
+
+    // Update future or all in recurrence group
+    if (scope === "future" || scope === "all") {
+      const current = await Appointment.findOne({ _id: id, doctorId });
+      if (!current?.recurrenceGroupId) {
+        return NextResponse.json(
+          { error: "No recurrence group found" },
+          { status: 400 }
+        );
+      }
+
+      const dateFilter = scope === "future"
+        ? { date: { $gte: current.date } }
+        : {};
+
+      await Appointment.updateMany(
+        { recurrenceGroupId: current.recurrenceGroupId, doctorId, ...dateFilter },
+        { $set: updates }
+      );
+
+      return NextResponse.json({
+        message: `Updated ${scope} appointments in series`,
+      });
+    }
+
+    return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
+  } catch (error) {
+    console.error("Update appointment error:", error);
+    return NextResponse.json(
+      { error: "Failed to update appointment" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE — Cancel appointment
+// scope query param: "single" | "future" | "all"
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await connectDB();
+    const doctorId = await getAuthDoctor(req);
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const scope = searchParams.get("scope") || "single";
+
+    if (scope === "single") {
+      await Appointment.findOneAndUpdate(
+        { _id: id, doctorId },
+        { $set: { status: "CANCELLED" } }
+      );
+      return NextResponse.json({ message: "Appointment cancelled" });
+    }
+
+    const current = await Appointment.findOne({ _id: id, doctorId });
+    if (!current?.recurrenceGroupId) {
+      return NextResponse.json(
+        { error: "No recurrence group found" },
+        { status: 400 }
+      );
+    }
+
+    const dateFilter = scope === "future"
+      ? { date: { $gte: current.date } }
+      : {};
+
+    await Appointment.updateMany(
+      {
+        recurrenceGroupId: current.recurrenceGroupId,
+        doctorId,
+        ...dateFilter,
+      },
+      { $set: { status: "CANCELLED" } }
+    );
+
+    return NextResponse.json({
+      message: `Cancelled ${scope} appointments in series`,
+    });
+  } catch (error) {
+    console.error("Cancel appointment error:", error);
+    return NextResponse.json(
+      { error: "Failed to cancel appointment" },
+      { status: 500 }
+    );
+  }
+}
