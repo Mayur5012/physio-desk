@@ -5,46 +5,74 @@ import Client from "@/models/Client";
 import Session from "@/models/Session";
 import Appointment from "@/models/Appointment";
 import Billing from "@/models/Billing";
+import mongoose from "mongoose"; // ← added
 
 // GET — Single client
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }  // ← Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id } = await params;  // ← await params
+    const { id }   = await params;
 
     const client = await Client.findOne({ _id: id, doctorId }).lean();
 
     if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      );
     }
 
+    const clientObjId = new mongoose.Types.ObjectId(id); // ← cast once
+
     const [
-      sessionsCompleted, lastSession,
-      nextAppointment, totalPaid, totalPending,
+      sessionsCompleted,
+      lastSession,
+      nextAppointment,
+      totalPaid,
+      totalPending,
     ] = await Promise.all([
+
       Session.countDocuments({ clientId: id }),
 
       Session.findOne({ clientId: id })
-        .sort({ createdAt: -1 }).lean(),
+        .sort({ createdAt: -1 })
+        .lean(),
 
       Appointment.findOne({
         clientId: id,
-        date: { $gte: new Date() },
-        status: "SCHEDULED",
-      }).sort({ date: 1 }).lean(),
+        date:     { $gte: new Date() },
+        status:   "SCHEDULED",
+      })
+        .sort({ date: 1 })
+        .lean(),
 
+      // ✅ ObjectId cast — was always returning 0
       Billing.aggregate([
-        { $match: { clientId: id } },
-        { $group: { _id: null, total: { $sum: "$amountPaid" } } },
+        {
+          $match: { clientId: clientObjId },
+        },
+        {
+          $group: { _id: null, total: { $sum: "$amountPaid" } },
+        },
       ]),
 
+      // ✅ ObjectId cast — was always returning 0
       Billing.aggregate([
-        { $match: { clientId: id } },
-        { $group: { _id: null, total: { $sum: { $subtract: ["$totalFee", "$amountPaid"] } } } },
+        {
+          $match: { clientId: clientObjId },
+        },
+        {
+          $group: {
+            _id:   null,
+            total: {
+              $sum: { $subtract: ["$totalFee", "$amountPaid"] },
+            },
+          },
+        },
       ]),
     ]);
 
@@ -52,28 +80,31 @@ export async function GET(
       client,
       summary: {
         sessionsCompleted,
-        lastVisit:       lastSession?.createdAt || null,
-        nextAppointment: nextAppointment || null,
-        totalPaid:       totalPaid[0]?.total    || 0,
-        totalPending:    totalPending[0]?.total || 0,
+        lastVisit:       lastSession?.createdAt    || null,
+        nextAppointment: nextAppointment            || null,
+        totalPaid:       totalPaid[0]?.total        || 0,
+        totalPending:    totalPending[0]?.total     || 0,
       },
     });
   } catch (error) {
     console.error("Get client error:", error);
-    return NextResponse.json({ error: "Failed to fetch client" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch client" },
+      { status: 500 }
+    );
   }
 }
 
 // PUT — Update client
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }  // ← Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id } = await params;  // ← await params
-    const body = await req.json();
+    const { id }   = await params;
+    const body     = await req.json();
 
     const client = await Client.findOneAndUpdate(
       { _id: id, doctorId },
@@ -82,25 +113,34 @@ export async function PUT(
     );
 
     if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ message: "Client updated successfully", client });
+    return NextResponse.json({
+      message: "Client updated successfully",
+      client,
+    });
   } catch (error) {
     console.error("Update client error:", error);
-    return NextResponse.json({ error: "Failed to update client" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update client" },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE — Soft delete
+// DELETE — Soft delete (discharge)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }  // ← Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id } = await params;  // ← await params
+    const { id }   = await params;
 
     const client = await Client.findOneAndUpdate(
       { _id: id, doctorId },
@@ -109,12 +149,18 @@ export async function DELETE(
     );
 
     if (!client) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Client not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ message: "Client discharged successfully" });
   } catch (error) {
     console.error("Delete client error:", error);
-    return NextResponse.json({ error: "Failed to discharge client" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to discharge client" },
+      { status: 500 }
+    );
   }
 }
