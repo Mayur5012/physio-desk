@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,7 +8,7 @@ import api from "@/lib/api";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Toast, { useToast } from "@/components/ui/Toast";
-import { ArrowLeft, Save, IndianRupee } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { format } from "date-fns";
 
 const schema = z.object({
@@ -30,7 +30,8 @@ interface Client {
   sessionFee: number;
 }
 
-export default function NewBillPage() {
+// ── Inner component (uses useSearchParams) ─────────────────
+function NewBillForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { toast, showToast, hideToast } = useToast();
@@ -55,16 +56,14 @@ export default function NewBillPage() {
     },
   });
 
-  const watchTotal = watch("totalFee");
-  const watchPaid  = watch("amountPaid");
+  const watchTotal  = watch("totalFee");
+  const watchPaid   = watch("amountPaid");
   const watchClient = watch("clientId");
 
-  // Update balance
   useEffect(() => {
     setBalance(Number(watchTotal || 0) - Number(watchPaid || 0));
   }, [watchTotal, watchPaid]);
 
-  // Auto-fill session fee from client
   useEffect(() => {
     if (!watchClient) return;
     const client = clients.find((c) => c._id === watchClient);
@@ -100,7 +99,7 @@ export default function NewBillPage() {
   };
 
   const statusLabel =
-    balance <= 0 ? "PAID" :
+    balance <= 0        ? "PAID"    :
     Number(watchPaid) > 0 ? "PARTIAL" :
     "PENDING";
 
@@ -116,8 +115,7 @@ export default function NewBillPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition 
-                     text-gray-500"
+          className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500"
         >
           <ArrowLeft size={18} />
         </button>
@@ -131,26 +129,24 @@ export default function NewBillPage() {
 
         {/* Client + Date */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Bill Details
           </h3>
 
-          {/* Client */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Client <span className="text-red-500">*</span>
             </label>
             <select
               {...register("clientId")}
-              className="w-full px-4 py-2.5 border border-gray-300 
-                         rounded-lg text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300
+                         rounded-lg text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 bg-white"
             >
               <option value="">Select client...</option>
               {clients.map((c) => (
                 <option key={c._id} value={c._id}>
-                  {c.name} — {c.phone}
+                  {c.name} – {c.phone}
                 </option>
               ))}
             </select>
@@ -169,17 +165,14 @@ export default function NewBillPage() {
               required
               error={errors.date?.message}
             />
-
-            {/* Payment Mode */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 
-                                mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Payment Mode
               </label>
               <select
                 {...register("paymentMode")}
-                className="w-full px-4 py-2.5 border border-gray-300 
-                           rounded-lg text-sm focus:outline-none focus:ring-2 
+                className="w-full px-4 py-2.5 border border-gray-300
+                           rounded-lg text-sm focus:outline-none focus:ring-2
                            focus:ring-blue-500 bg-white"
               >
                 <option value="CASH">💵 Cash</option>
@@ -192,8 +185,7 @@ export default function NewBillPage() {
 
         {/* Fee Breakdown */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Fee Breakdown
           </h3>
 
@@ -216,7 +208,7 @@ export default function NewBillPage() {
           </div>
 
           {/* Balance Summary */}
-          <div className="flex items-center justify-between p-4 
+          <div className="flex items-center justify-between p-4
                           bg-gray-50 rounded-xl border border-gray-100">
             <div>
               <p className="text-xs text-gray-500">Balance Due</p>
@@ -225,13 +217,11 @@ export default function NewBillPage() {
                 ₹{Math.max(0, balance).toLocaleString("en-IN")}
               </p>
             </div>
-            <span className={`px-3 py-1.5 rounded-full text-xs font-bold
-                              ${statusColor}`}>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${statusColor}`}>
               {statusLabel}
             </span>
           </div>
 
-          {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Notes
@@ -240,31 +230,29 @@ export default function NewBillPage() {
               {...register("notes")}
               rows={2}
               placeholder="Optional payment notes..."
-              className="w-full px-4 py-2.5 border border-gray-300 
-                         rounded-lg text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300
+                         rounded-lg text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 resize-none"
             />
           </div>
         </Card>
 
         {/* Submit */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 
-                        -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 
-                        flex gap-3 justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200
+                        -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 flex gap-3 justify-end">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-5 py-2.5 border border-gray-300 rounded-lg 
-                       text-sm font-medium text-gray-700 
-                       hover:bg-gray-50 transition"
+            className="px-5 py-2.5 border border-gray-300 rounded-lg
+                       text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 
-                       hover:bg-blue-700 disabled:bg-blue-400 text-white 
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600
+                       hover:bg-blue-700 disabled:bg-blue-400 text-white
                        rounded-lg text-sm font-medium transition"
           >
             <Save size={16} />
@@ -274,13 +262,22 @@ export default function NewBillPage() {
       </form>
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={hideToast}
-        />
+        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}
     </div>
   );
 }
 
+// ── Page export with Suspense wrapper ──────────────────────
+export default function NewBillPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
+                        rounded-full animate-spin" />
+      </div>
+    }>
+      <NewBillForm />
+    </Suspense>
+  );
+}

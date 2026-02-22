@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,28 +29,26 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 interface Client { _id: string; name: string; phone: string; }
-interface SlotInfo {
-  startTime: string; endTime: string; available: boolean;
-}
+interface SlotInfo { startTime: string; endTime: string; available: boolean; }
 
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-export default function NewAppointmentPage() {
+// ── Inner component (uses useSearchParams) ─────────────────
+function NewAppointmentForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast, showToast, hideToast } = useToast();
 
-  const [clients,       setClients]       = useState<Client[]>([]);
-  const [slots,         setSlots]         = useState<SlotInfo[]>([]);
-  const [loadingSlots,  setLoadingSlots]  = useState(false);
-  const [conflictMsg,   setConflictMsg]   = useState("");
-  const [loading,       setLoading]       = useState(false);
-  const [showRecurrence,setShowRecurrence]= useState(false);
-  const [customDays,    setCustomDays]    = useState<number[]>([]);
+  const [clients,        setClients]        = useState<Client[]>([]);
+  const [slots,          setSlots]          = useState<SlotInfo[]>([]);
+  const [loadingSlots,   setLoadingSlots]   = useState(false);
+  const [conflictMsg,    setConflictMsg]    = useState("");
+  const [loading,        setLoading]        = useState(false);
+  const [showRecurrence, setShowRecurrence] = useState(false);
+  const [customDays,     setCustomDays]     = useState<number[]>([]);
 
-  const defaultDate = searchParams.get("date") ||
-    format(new Date(), "yyyy-MM-dd");
-  const defaultTime = searchParams.get("time") || "";
+  const defaultDate   = searchParams.get("date") || format(new Date(), "yyyy-MM-dd");
+  const defaultTime   = searchParams.get("time") || "";
   const defaultClient = searchParams.get("clientId") || "";
 
   const {
@@ -59,30 +57,28 @@ export default function NewAppointmentPage() {
   } = useForm<FormData>({
     resolver: zodResolver(schema) as any,
     defaultValues: {
-      date:        defaultDate,
-      startTime:   defaultTime,
-      durationMins: 60,
-      type:        "FOLLOWUP",
-      isRecurring: false,
+      date:              defaultDate,
+      startTime:         defaultTime,
+      durationMins:      60,
+      type:              "FOLLOWUP",
+      isRecurring:       false,
       recurrencePattern: "EVERY_N_DAYS",
       recurrenceEveryN:  2,
-      clientId: defaultClient,
+      clientId:          defaultClient,
     },
   });
 
-  const watchDate     = watch("date");
-  const watchDuration = watch("durationMins");
-  const watchRecurring= watch("isRecurring");
-  const watchPattern  = watch("recurrencePattern");
+  const watchDate      = watch("date");
+  const watchDuration  = watch("durationMins");
+  const watchRecurring = watch("isRecurring");
+  const watchPattern   = watch("recurrencePattern");
 
-  // Load clients
   useEffect(() => {
     api.get("/clients?status=ACTIVE&limit=100")
       .then(({ data }) => setClients(data.clients))
       .catch(() => {});
   }, []);
 
-  // Load slots when date or duration changes
   useEffect(() => {
     if (!watchDate || !watchDuration) return;
     setLoadingSlots(true);
@@ -133,30 +129,23 @@ export default function NewAppointmentPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition 
-                     text-gray-500"
+          className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500"
         >
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">
-            Book Appointment
-          </h2>
-          <p className="text-sm text-gray-500">
-            Schedule a new appointment
-          </p>
+          <h2 className="text-xl font-bold text-gray-900">Book Appointment</h2>
+          <p className="text-sm text-gray-500">Schedule a new appointment</p>
         </div>
       </div>
 
       {/* Conflict Warning */}
       {conflictMsg && (
-        <div className="flex items-start gap-3 bg-yellow-50 border 
+        <div className="flex items-start gap-3 bg-yellow-50 border
                         border-yellow-200 rounded-xl px-4 py-3">
           <AlertTriangle size={18} className="text-yellow-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-yellow-800">
-              Slot Conflict
-            </p>
+            <p className="text-sm font-medium text-yellow-800">Slot Conflict</p>
             <p className="text-xs text-yellow-700 mt-0.5">{conflictMsg}</p>
           </div>
         </div>
@@ -166,8 +155,7 @@ export default function NewAppointmentPage() {
 
         {/* ── Core Details ── */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Appointment Details
           </h3>
 
@@ -178,14 +166,14 @@ export default function NewAppointmentPage() {
             </label>
             <select
               {...register("clientId")}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
-                         text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 bg-white"
             >
               <option value="">Select a client...</option>
               {clients.map((c) => (
                 <option key={c._id} value={c._id}>
-                  {c.name} — {c.phone}
+                  {c.name} – {c.phone}
                 </option>
               ))}
             </select>
@@ -264,8 +252,7 @@ export default function NewAppointmentPage() {
                 { value: "NEW_CONSULTATION", label: "New Consultation" },
                 { value: "ONE_TIME",         label: "One-time" },
               ].map(({ value, label }) => (
-                <label key={value}
-                  className="flex items-center gap-2 cursor-pointer">
+                <label key={value} className="flex items-center gap-2 cursor-pointer">
                   <input
                     {...register("type")}
                     type="radio"
@@ -287,8 +274,8 @@ export default function NewAppointmentPage() {
               {...register("notes")}
               rows={2}
               placeholder="Any special notes for this appointment..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
-                         text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 resize-none"
             />
           </div>
@@ -303,15 +290,14 @@ export default function NewAppointmentPage() {
                 Repeat this appointment?
               </h3>
             </div>
-            {/* Toggle */}
             <button
               type="button"
               onClick={() => setShowRecurrence(!showRecurrence)}
-              className={`relative w-11 h-6 rounded-full transition-colors 
+              className={`relative w-11 h-6 rounded-full transition-colors
                           ${showRecurrence ? "bg-blue-600" : "bg-gray-200"}`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white 
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white
                             rounded-full shadow transition-transform
                             ${showRecurrence ? "translate-x-5" : ""}`}
               />
@@ -323,8 +309,7 @@ export default function NewAppointmentPage() {
 
               {/* Pattern */}
               <div>
-                <label className="block text-sm font-medium 
-                                   text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Repeat Pattern
                 </label>
                 <div className="flex gap-4 flex-wrap">
@@ -333,8 +318,7 @@ export default function NewAppointmentPage() {
                     { value: "EVERY_N_DAYS", label: "Every N Days" },
                     { value: "CUSTOM",       label: "Custom Days" },
                   ].map(({ value, label }) => (
-                    <label key={value}
-                      className="flex items-center gap-2 cursor-pointer">
+                    <label key={value} className="flex items-center gap-2 cursor-pointer">
                       <input
                         {...register("recurrencePattern")}
                         type="radio"
@@ -347,7 +331,6 @@ export default function NewAppointmentPage() {
                 </div>
               </div>
 
-              {/* Every N Days input */}
               {watchPattern === "EVERY_N_DAYS" && (
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600">Repeat every</span>
@@ -356,20 +339,18 @@ export default function NewAppointmentPage() {
                     type="number"
                     min={1}
                     max={30}
-                    className="w-16 px-3 py-2 border border-gray-300 
-                               rounded-lg text-sm text-center 
-                               focus:outline-none focus:ring-2 
+                    className="w-16 px-3 py-2 border border-gray-300
+                               rounded-lg text-sm text-center
+                               focus:outline-none focus:ring-2
                                focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-600">days</span>
                 </div>
               )}
 
-              {/* Custom days of week */}
               {watchPattern === "CUSTOM" && (
                 <div>
-                  <label className="block text-sm font-medium 
-                                     text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select Days
                   </label>
                   <div className="flex gap-2 flex-wrap">
@@ -384,7 +365,7 @@ export default function NewAppointmentPage() {
                               : [...prev, idx]
                           )
                         }
-                        className={`w-10 h-10 rounded-full text-xs font-medium 
+                        className={`w-10 h-10 rounded-full text-xs font-medium
                                     border transition
                                     ${customDays.includes(idx)
                                       ? "bg-blue-600 border-blue-600 text-white"
@@ -398,7 +379,6 @@ export default function NewAppointmentPage() {
                 </div>
               )}
 
-              {/* End Condition */}
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   {...register("endAfterSessions")}
@@ -415,8 +395,7 @@ export default function NewAppointmentPage() {
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-100 
-                              rounded-lg px-4 py-3">
+              <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
                 <p className="text-xs text-blue-700">
                   <span className="font-semibold">Note:</span>{" "}
                   All recurring appointments will be created at{" "}
@@ -431,22 +410,21 @@ export default function NewAppointmentPage() {
         </Card>
 
         {/* Sticky Bottom Bar */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 
+        <div className="sticky bottom-0 bg-white border-t border-gray-200
                         -mx-6 px-6 py-4 flex gap-3 justify-end">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-5 py-2.5 border border-gray-300 rounded-lg 
-                       text-sm font-medium text-gray-700 
-                       hover:bg-gray-50 transition"
+            className="px-5 py-2.5 border border-gray-300 rounded-lg
+                       text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 
-                       hover:bg-blue-700 disabled:bg-blue-400 text-white 
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600
+                       hover:bg-blue-700 disabled:bg-blue-400 text-white
                        rounded-lg text-sm font-medium transition"
           >
             <Save size={16} />
@@ -464,5 +442,19 @@ export default function NewAppointmentPage() {
         <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}
     </div>
+  );
+}
+
+// ── Page export with Suspense wrapper ──────────────────────
+export default function NewAppointmentPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
+                        rounded-full animate-spin" />
+      </div>
+    }>
+      <NewAppointmentForm />
+    </Suspense>
   );
 }

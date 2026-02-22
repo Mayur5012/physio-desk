@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -36,20 +36,19 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-interface Client {
-  _id: string; name: string; phone: string;
-}
+interface Client { _id: string; name: string; phone: string; }
 
-export default function NewSessionPage() {
+// ── Inner component (uses useSearchParams) ─────────────────
+function NewSessionForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { toast, showToast, hideToast } = useToast();
 
-  const [clients,       setClients]       = useState<Client[]>([]);
-  const [techniques,    setTechniques]    = useState<string[]>([]);
-  const [painBefore,    setPainBefore]    = useState(5);
-  const [painAfter,     setPainAfter]     = useState(3);
-  const [loading,       setLoading]       = useState(false);
+  const [clients,    setClients]    = useState<Client[]>([]);
+  const [techniques, setTechniques] = useState<string[]>([]);
+  const [painBefore, setPainBefore] = useState(5);
+  const [painAfter,  setPainAfter]  = useState(3);
+  const [loading,    setLoading]    = useState(false);
 
   const defaultClient = searchParams.get("clientId") || "";
 
@@ -72,7 +71,6 @@ export default function NewSessionPage() {
       .catch(() => {});
   }, []);
 
-  // Auto-fill session number when client selected
   const watchClient = watch("clientId");
   useEffect(() => {
     if (!watchClient) return;
@@ -95,9 +93,9 @@ export default function NewSessionPage() {
       await api.post("/sessions", {
         ...data,
         techniques,
-        painBefore: painBefore,
-        painAfter:  painAfter,
-        appointmentId:   searchParams.get("appointmentId") || undefined,
+        painBefore,
+        painAfter,
+        appointmentId: searchParams.get("appointmentId") || undefined,
       });
       showToast("Session recorded successfully!", "success");
       setTimeout(() => router.push("/sessions"), 1200);
@@ -126,8 +124,7 @@ export default function NewSessionPage() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-gray-700">{label}</label>
-          <span className={`text-sm font-bold px-2.5 py-0.5 rounded-lg 
-                            border ${color}`}>
+          <span className={`text-sm font-bold px-2.5 py-0.5 rounded-lg border ${color}`}>
             {value}/10
           </span>
         </div>
@@ -135,8 +132,8 @@ export default function NewSessionPage() {
           <button
             type="button"
             onClick={() => onChange(Math.max(0, value - 1))}
-            className="w-8 h-8 rounded-full border border-gray-300 
-                       flex items-center justify-center 
+            className="w-8 h-8 rounded-full border border-gray-300
+                       flex items-center justify-center
                        hover:bg-gray-50 transition text-gray-600"
           >
             <Minus size={14} />
@@ -145,14 +142,14 @@ export default function NewSessionPage() {
             type="range"
             min={0} max={10} value={value}
             onChange={(e) => onChange(Number(e.target.value))}
-            className="flex-1 h-2 appearance-none bg-gray-200 
+            className="flex-1 h-2 appearance-none bg-gray-200
                        rounded-full cursor-pointer accent-blue-600"
           />
           <button
             type="button"
             onClick={() => onChange(Math.min(10, value + 1))}
-            className="w-8 h-8 rounded-full border border-gray-300 
-                       flex items-center justify-center 
+            className="w-8 h-8 rounded-full border border-gray-300
+                       flex items-center justify-center
                        hover:bg-gray-50 transition text-gray-600"
           >
             <Plus size={14} />
@@ -187,26 +184,24 @@ export default function NewSessionPage() {
 
         {/* ── Basic Info ── */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Session Info
           </h3>
 
-          {/* Client */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Client <span className="text-red-500">*</span>
             </label>
             <select
               {...register("clientId")}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
-                         text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 bg-white"
             >
               <option value="">Select client...</option>
               {clients.map((c) => (
                 <option key={c._id} value={c._id}>
-                  {c.name} — {c.phone}
+                  {c.name} – {c.phone}
                 </option>
               ))}
             </select>
@@ -249,8 +244,7 @@ export default function NewSessionPage() {
 
         {/* ── Pain Scale ── */}
         <Card className="p-6 space-y-5">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Pain Assessment (VAS Scale)
           </h3>
           <PainSlider
@@ -267,30 +261,28 @@ export default function NewSessionPage() {
 
         {/* ── SOAP Notes ── */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             SOAP Notes
           </h3>
-
           {[
             {
               field: "subjective" as const,
-              label: "S — Subjective",
+              label: "S – Subjective",
               placeholder: "Patient's complaints, symptoms, pain description...",
             },
             {
               field: "objective" as const,
-              label: "O — Objective",
+              label: "O – Objective",
               placeholder: "Clinical findings, ROM, strength, posture...",
             },
             {
               field: "assessment" as const,
-              label: "A — Assessment",
+              label: "A – Assessment",
               placeholder: "Diagnosis, progress evaluation, clinical impression...",
             },
             {
               field: "plan" as const,
-              label: "P — Plan",
+              label: "P – Plan",
               placeholder: "Treatment plan, frequency, goals, next steps...",
             },
           ].map(({ field, label, placeholder }) => (
@@ -302,8 +294,8 @@ export default function NewSessionPage() {
                 {...register(field)}
                 rows={2}
                 placeholder={placeholder}
-                className="w-full px-4 py-2.5 border border-gray-300 
-                           rounded-lg text-sm focus:outline-none focus:ring-2 
+                className="w-full px-4 py-2.5 border border-gray-300
+                           rounded-lg text-sm focus:outline-none focus:ring-2
                            focus:ring-blue-500 resize-none"
               />
             </div>
@@ -312,8 +304,7 @@ export default function NewSessionPage() {
 
         {/* ── Techniques ── */}
         <Card className="p-6">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider mb-4">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
             Techniques Used
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -322,7 +313,7 @@ export default function NewSessionPage() {
                 key={t}
                 type="button"
                 onClick={() => toggleTechnique(t)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium 
+                className={`px-3 py-1.5 rounded-full text-xs font-medium
                             border transition
                             ${techniques.includes(t)
                               ? "bg-blue-600 border-blue-600 text-white"
@@ -337,8 +328,7 @@ export default function NewSessionPage() {
 
         {/* ── Exercises + Notes ── */}
         <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Exercises & Notes
           </h3>
           <div>
@@ -349,8 +339,8 @@ export default function NewSessionPage() {
               {...register("exercises")}
               rows={2}
               placeholder="Exercises prescribed for home practice..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
-                         text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 resize-none"
             />
           </div>
@@ -362,31 +352,29 @@ export default function NewSessionPage() {
               {...register("notes")}
               rows={2}
               placeholder="Any additional observations or notes..."
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
-                         text-sm focus:outline-none focus:ring-2 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
                          focus:ring-blue-500 resize-none"
             />
           </div>
         </Card>
 
         {/* Sticky Submit Bar */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 
-                        -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 
-                        flex gap-3 justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200
+                        -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 flex gap-3 justify-end">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-5 py-2.5 border border-gray-300 rounded-lg 
-                       text-sm font-medium text-gray-700 
-                       hover:bg-gray-50 transition"
+            className="px-5 py-2.5 border border-gray-300 rounded-lg
+                       text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 
-                       hover:bg-blue-700 disabled:bg-blue-400 text-white 
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600
+                       hover:bg-blue-700 disabled:bg-blue-400 text-white
                        rounded-lg text-sm font-medium transition"
           >
             <Save size={16} />
@@ -399,5 +387,19 @@ export default function NewSessionPage() {
         <Toast message={toast.message} type={toast.type} onClose={hideToast} />
       )}
     </div>
+  );
+}
+
+// ── Page export with Suspense wrapper ──────────────────────
+export default function NewSessionPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
+                        rounded-full animate-spin" />
+      </div>
+    }>
+      <NewSessionForm />
+    </Suspense>
   );
 }
