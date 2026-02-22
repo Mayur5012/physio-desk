@@ -15,10 +15,10 @@ import {
 import { format } from "date-fns";
 
 const TABS = [
-  { key: "overview",      label: "Overview" },
-  { key: "sessions",      label: "Sessions" },
-  { key: "appointments",  label: "Appointments" },
-  { key: "billing",       label: "Billing" },
+  { key: "overview",     label: "Overview"      },
+  { key: "sessions",     label: "Sessions"      },
+  { key: "appointments", label: "Appointments"  },
+  { key: "billing",      label: "Billing"       },
 ];
 
 const THERAPY_COLOR: Record<string, string> = {
@@ -27,54 +27,55 @@ const THERAPY_COLOR: Record<string, string> = {
   COMBINED:      "text-purple-600 bg-purple-50",
 };
 
+const STATUS_STYLE: Record<string, string> = {
+  PAID:    "bg-green-100 text-green-700",
+  PENDING: "bg-yellow-100 text-yellow-700",
+  PARTIAL: "bg-blue-100 text-blue-700",
+};
+
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
 
-  const [data,       setData]       = useState<any>(null);
-  const [sessions,   setSessions]   = useState<any[]>([]);
-  const [appts,      setAppts]      = useState<any[]>([]);
-  const [billing,    setBilling]    = useState<any[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [activeTab,  setActiveTab]  = useState("overview");
+  const [data,      setData]      = useState<any>(null);
+  const [sessions,  setSessions]  = useState<any[]>([]);
+  const [appts,     setAppts]     = useState<any[]>([]);
+  const [billing,   setBilling]   = useState<any[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
 
+  // ── Load client ───────────────────────────────────────────
   useEffect(() => {
-    const load = async () => {
-      try {
-        const { data: res } = await api.get(`/clients/${id}`);
-        setData(res);
-      } catch {
-        showToast("Failed to load client", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    api.get(`/clients/${id}`)
+      .then(({ data: res }) => setData(res))
+      .catch(() => showToast("Failed to load client", "error"))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  // Load tab data on demand
+  // ── Load tab data on demand ───────────────────────────────
   useEffect(() => {
     if (activeTab === "sessions" && sessions.length === 0) {
-      api.get(`/sessions?clientId=${id}`)
-        .then((r) => setSessions(r.data.sessions))
+      api.get(`/sessions?clientId=${id}&limit=50`)
+        .then((r) => setSessions(r.data.sessions ?? []))
         .catch(() => {});
     }
     if (activeTab === "appointments" && appts.length === 0) {
-      api.get(`/appointments?clientId=${id}`)
-        .then((r) => setAppts(r.data.appointments))
+      api.get(`/appointments?clientId=${id}&limit=50`)
+        .then((r) => setAppts(r.data.appointments ?? []))
         .catch(() => {});
     }
     if (activeTab === "billing" && billing.length === 0) {
-      api.get(`/billing?clientId=${id}`)
-        .then((r) => setBilling(r.data.entries))
+      api.get(`/billing?clientId=${id}&limit=50`)
+        .then((r) => setBilling(r.data.bills ?? []))  // ← was r.data.entries
         .catch(() => {});
     }
   }, [activeTab]);
 
+  // ── Loading / error states ────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
       </div>
     );
@@ -82,7 +83,7 @@ export default function ClientProfilePage() {
 
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-3">
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
         <AlertCircle size={40} className="text-red-400" />
         <p className="text-gray-600">Client not found</p>
         <button
@@ -97,23 +98,28 @@ export default function ClientProfilePage() {
 
   const { client, summary } = data;
   const progressPct = client.totalSessionsPlanned
-    ? Math.round((summary.sessionsCompleted / client.totalSessionsPlanned) * 100)
+    ? Math.round(
+        (summary.sessionsCompleted / client.totalSessionsPlanned) * 100
+      )
     : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/clients")}
-            className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500"
+            className="p-2 hover:bg-gray-100 rounded-lg transition 
+                       text-gray-500"
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{client.name}</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {client.name}
+            </h2>
             <p className="text-sm text-gray-500">Client Profile</p>
           </div>
         </div>
@@ -138,7 +144,7 @@ export default function ClientProfilePage() {
             {client.name.charAt(0).toUpperCase()}
           </div>
 
-          {/* Info Grid */}
+          {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap mb-3">
               <h3 className="text-lg font-bold text-gray-900">
@@ -146,40 +152,45 @@ export default function ClientProfilePage() {
               </h3>
               <Badge
                 variant={client.status.toLowerCase() as any}
-                label={client.status.charAt(0) +
-                       client.status.slice(1).toLowerCase()}
+                label={
+                  client.status.charAt(0) +
+                  client.status.slice(1).toLowerCase()
+                }
               />
               <span
-                className={`text-xs px-2.5 py-1 rounded-full font-medium 
-                            ${THERAPY_COLOR[client.therapyType]}`}
+                className={`text-xs px-2.5 py-1 rounded-full font-medium
+                            ${THERAPY_COLOR[client.therapyType] ??
+                              "bg-gray-100 text-gray-600"}`}
               >
-                {client.therapyType.charAt(0) +
-                 client.therapyType.slice(1).toLowerCase()}
+                {client.therapyType
+                  ? client.therapyType.charAt(0) +
+                    client.therapyType.slice(1).toLowerCase()
+                  : "—"}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-1.5 text-gray-600">
-                <User size={14} className="text-gray-400" />
+                <User size={14} className="text-gray-400 shrink-0" />
                 {client.age}y /{" "}
                 {client.gender.charAt(0) +
                  client.gender.slice(1).toLowerCase()}
               </div>
               <div className="flex items-center gap-1.5 text-gray-600">
-                <Phone size={14} className="text-gray-400" />
+                <Phone size={14} className="text-gray-400 shrink-0" />
                 {client.phone}
               </div>
               {client.email && (
                 <div className="flex items-center gap-1.5 text-gray-600 
-                                col-span-2">
-                  <Mail size={14} className="text-gray-400" />
+                                sm:col-span-2 truncate">
+                  <Mail size={14} className="text-gray-400 shrink-0" />
                   {client.email}
                 </div>
               )}
               {client.address && (
                 <div className="flex items-center gap-1.5 text-gray-600 
-                                col-span-2">
-                  <MapPin size={14} className="text-gray-400" />
+                                sm:col-span-2">
+                  <MapPin size={14} className="text-gray-400 shrink-0" />
                   {client.address}
                 </div>
               )}
@@ -187,20 +198,22 @@ export default function ClientProfilePage() {
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 
-                        pt-5 border-t border-gray-100">
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-5 
+                        border-t border-gray-100">
           {[
             {
+              icon:  ClipboardList,
+              color: "text-purple-600",
               label: "Sessions Done",
-              value: summary.sessionsCompleted,
+              value: summary.sessionsCompleted ?? 0,
               sub:   client.totalSessionsPlanned
                        ? `of ${client.totalSessionsPlanned}`
                        : "total",
-              icon: ClipboardList,
-              color: "text-purple-600",
             },
             {
+              icon:  Calendar,
+              color: "text-blue-600",
               label: "Last Visit",
               value: summary.lastVisit
                 ? format(new Date(summary.lastVisit), "dd MMM")
@@ -208,25 +221,23 @@ export default function ClientProfilePage() {
               sub: summary.lastVisit
                 ? format(new Date(summary.lastVisit), "yyyy")
                 : "No visits yet",
-              icon: Calendar,
-              color: "text-blue-600",
             },
             {
-              label: "Total Paid",
-              value: `₹${(summary.totalPaid || 0).toLocaleString("en-IN")}`,
-              sub: "collected",
-              icon: IndianRupee,
+              icon:  IndianRupee,
               color: "text-green-600",
+              label: "Total Paid",
+              value: `₹${(summary.totalPaid ?? 0).toLocaleString("en-IN")}`,
+              sub:   "collected",
             },
             {
-              label: "Pending Dues",
-              value: `₹${(summary.totalPending || 0).toLocaleString("en-IN")}`,
-              sub: "outstanding",
-              icon: IndianRupee,
-              color: summary.totalPending > 0
+              icon:  IndianRupee,
+              color: (summary.totalPending ?? 0) > 0
                 ? "text-red-600" : "text-gray-400",
+              label: "Pending Dues",
+              value: `₹${(summary.totalPending ?? 0).toLocaleString("en-IN")}`,
+              sub:   "outstanding",
             },
-          ].map(({ label, value, sub, icon: Icon, color }) => (
+          ].map(({ icon: Icon, color, label, value, sub }) => (
             <div key={label} className="text-center">
               <Icon size={18} className={`mx-auto mb-1 ${color}`} />
               <p className="text-lg font-bold text-gray-900">{value}</p>
@@ -264,11 +275,14 @@ export default function ClientProfilePage() {
 
         <div className="p-5">
 
-          {/* ── Overview Tab ── */}
+          {/* ── Overview ── */}
           {activeTab === "overview" && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoRow label="Chief Complaint" value={client.chiefComplaint} />
+                <InfoRow
+                  label="Chief Complaint"
+                  value={client.chiefComplaint}
+                />
                 <InfoRow
                   label="Body Part"
                   value={`${client.bodyPart} (${
@@ -289,7 +303,10 @@ export default function ClientProfilePage() {
                   label="Client Type"
                   value={
                     client.clientType.charAt(0) +
-                    client.clientType.slice(1).replace("_", " ").toLowerCase()
+                    client.clientType
+                      .slice(1)
+                      .replace("_", " ")
+                      .toLowerCase()
                   }
                 />
                 <InfoRow
@@ -318,7 +335,6 @@ export default function ClientProfilePage() {
                 />
               </div>
 
-              {/* Next Appointment */}
               {summary.nextAppointment && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 
                                 rounded-xl">
@@ -338,7 +354,7 @@ export default function ClientProfilePage() {
             </div>
           )}
 
-          {/* ── Sessions Tab ── */}
+          {/* ── Sessions ── */}
           {activeTab === "sessions" && (
             <div>
               <div className="flex justify-end mb-4">
@@ -357,51 +373,66 @@ export default function ClientProfilePage() {
                   No sessions recorded yet
                 </p>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 text-xs 
-                                   text-gray-500 uppercase">
-                      <th className="text-left py-2 px-3">#</th>
-                      <th className="text-left py-2 px-3">Date</th>
-                      <th className="text-left py-2 px-3">Therapy</th>
-                      <th className="text-left py-2 px-3">Duration</th>
-                      <th className="text-left py-2 px-3">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {sessions.map((s: any) => (
-                      <tr key={s._id} className="hover:bg-gray-50">
-                        <td className="py-3 px-3 text-gray-500">
-                          {s.sessionNumber}
-                        </td>
-                        <td className="py-3 px-3">
-                          {format(new Date(s.createdAt), "dd MMM yyyy")}
-                        </td>
-                        <td className="py-3 px-3 text-gray-600">
-                          {s.therapyType.charAt(0) +
-                           s.therapyType.slice(1).toLowerCase()}
-                        </td>
-                        <td className="py-3 px-3 text-gray-600">
-                          {s.durationMins} min
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge
-                            variant={s.progress.toLowerCase() as any}
-                            label={
-                              s.progress.charAt(0) +
-                              s.progress.slice(1).toLowerCase()
-                            }
-                          />
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs 
+                                     text-gray-500 uppercase">
+                        <th className="text-left py-2 px-3">#</th>
+                        <th className="text-left py-2 px-3">Date</th>
+                        <th className="text-left py-2 px-3">Duration</th>
+                        <th className="text-left py-2 px-3">
+                          Pain Before
+                        </th>
+                        <th className="text-left py-2 px-3">
+                          Pain After
+                        </th>
+                        <th className="text-left py-2 px-3">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {sessions.map((s: any) => (
+                        <tr key={s._id} className="hover:bg-gray-50">
+                          <td className="py-3 px-3 font-semibold 
+                                         text-blue-600">
+                            #{s.sessionNumber}
+                          </td>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            {format(
+                              new Date(s.createdAt),
+                              "dd MMM yyyy"
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-gray-600">
+                            {s.durationMins} min
+                          </td>
+                          <td className="py-3 px-3 text-gray-600">
+                            {s.painBefore ?? "—"}
+                          </td>
+                          <td className="py-3 px-3 text-gray-600">
+                            {s.painAfter ?? "—"}
+                          </td>
+                          <td className="py-3 px-3">
+                            <button
+                              onClick={() =>
+                                router.push(`/sessions/${s._id}`)
+                              }
+                              className="text-xs text-blue-600 
+                                         hover:underline"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
 
-          {/* ── Appointments Tab ── */}
+          {/* ── Appointments ── */}
           {activeTab === "appointments" && (
             <div>
               <div className="flex justify-end mb-4">
@@ -425,22 +456,30 @@ export default function ClientProfilePage() {
                     <div
                       key={a._id}
                       className="flex items-center justify-between 
-                                 px-4 py-3 rounded-lg border border-gray-100 
-                                 hover:border-gray-200 transition"
+                                 px-4 py-3 rounded-lg border 
+                                 border-gray-100 hover:border-gray-200 
+                                 transition flex-wrap gap-2"
                     >
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {format(new Date(a.date), "EEE, dd MMM yyyy")}
+                          {format(
+                            new Date(a.date),
+                            "EEE, dd MMM yyyy"
+                          )}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {a.startTime} – {a.endTime} · {a.durationMins} min
+                          {a.startTime} – {a.endTime} ·{" "}
+                          {a.durationMins} min
                         </p>
                       </div>
                       <Badge
                         variant={a.status.toLowerCase() as any}
                         label={
                           a.status.charAt(0) +
-                          a.status.slice(1).replace("_", " ").toLowerCase()
+                          a.status
+                            .slice(1)
+                            .replace("_", " ")
+                            .toLowerCase()
                         }
                       />
                     </div>
@@ -450,7 +489,7 @@ export default function ClientProfilePage() {
             </div>
           )}
 
-          {/* ── Billing Tab ── */}
+          {/* ── Billing ── */}
           {activeTab === "billing" && (
             <div>
               <div className="flex justify-end mb-4">
@@ -469,41 +508,69 @@ export default function ClientProfilePage() {
                   No billing entries yet
                 </p>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 text-xs 
-                                   text-gray-500 uppercase">
-                      <th className="text-left py-2 px-3">Date</th>
-                      <th className="text-left py-2 px-3">Fee</th>
-                      <th className="text-left py-2 px-3">Paid</th>
-                      <th className="text-left py-2 px-3">Mode</th>
-                      <th className="text-left py-2 px-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {billing.map((b: any) => (
-                      <tr key={b._id} className="hover:bg-gray-50">
-                        <td className="py-3 px-3">
-                          {format(new Date(b.date), "dd MMM yyyy")}
-                        </td>
-                        <td className="py-3 px-3">₹{b.totalFee}</td>
-                        <td className="py-3 px-3">₹{b.amountPaid}</td>
-                        <td className="py-3 px-3 text-gray-500">
-                          {b.paymentMode}
-                        </td>
-                        <td className="py-3 px-3">
-                          <Badge
-                            variant={b.status.toLowerCase() as any}
-                            label={
-                              b.status.charAt(0) +
-                              b.status.slice(1).toLowerCase()
-                            }
-                          />
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-xs 
+                                     text-gray-500 uppercase">
+                        <th className="text-left py-2 px-3">Date</th>
+                        <th className="text-left py-2 px-3">Fee</th>
+                        <th className="text-left py-2 px-3">Paid</th>
+                        <th className="text-left py-2 px-3">Balance</th>
+                        <th className="text-left py-2 px-3">Mode</th>
+                        <th className="text-left py-2 px-3">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {billing.map((b: any) => {
+                        const balance = b.totalFee - b.amountPaid;
+                        return (
+                          <tr
+                            key={b._id}
+                            className="hover:bg-gray-50"
+                          >
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {b.date
+                                ? format(
+                                    new Date(b.date),
+                                    "dd MMM yyyy"
+                                  )
+                                : "—"}
+                            </td>
+                            <td className="py-3 px-3 font-medium">
+                              ₹{b.totalFee.toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-3 px-3 text-green-600 
+                                           font-medium">
+                              ₹{b.amountPaid.toLocaleString("en-IN")}
+                            </td>
+                            <td className={`py-3 px-3 font-medium
+                                           ${balance > 0
+                                             ? "text-red-500"
+                                             : "text-gray-400"}`}>
+                              {balance > 0
+                                ? `₹${balance.toLocaleString("en-IN")}`
+                                : "—"}
+                            </td>
+                            <td className="py-3 px-3 text-gray-500">
+                              {b.paymentMode}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full 
+                                            text-xs font-semibold
+                                            ${STATUS_STYLE[b.status] ??
+                                              "bg-gray-100 text-gray-600"}`}
+                              >
+                                {b.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
@@ -511,13 +578,16 @@ export default function ClientProfilePage() {
       </Card>
 
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
       )}
     </div>
   );
 }
 
-// ── Helper Component ───────────────────────────────────────
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
