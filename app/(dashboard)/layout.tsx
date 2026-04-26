@@ -67,7 +67,7 @@ export default async function DashboardLayout({
     }
   }
 
-  if (isExpired) {
+  if (isExpired && doctor) {
     return (
       <PageWrapper doctor={doctor}>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" />

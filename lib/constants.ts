@@ -306,3 +306,13 @@ export const PRACTICE_TYPE_CONFIG: Record<
     icon: "Settings",
   },
 };
+
+
+// Safe lookup helper — use this everywhere instead of PRACTICE_TYPE_CONFIG[x]
+export function getPracticeConfig(type: string) {
+  return PRACTICE_TYPE_CONFIG[type as PracticeType] ?? PRACTICE_TYPE_CONFIG.CUSTOM;
+}
+
+export function getPracticeColor(type: string) {
+  return PRACTICE_TYPE_COLORS[type as PracticeType] ?? "text-gray-600 bg-gray-50";
+}

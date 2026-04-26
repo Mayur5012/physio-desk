@@ -26,9 +26,10 @@ interface Bill {
 }
 
 interface Summary {
-  totalRevenue: number;
-  totalPending: number;
-  totalBills:   number;
+  totalBilled:      number;
+  collectedRevenue: number;
+  pendingRevenue:   number;
+  totalBills:       number;
 }
 
 const STATUS_FILTER = ["ALL", "PAID", "PENDING", "PARTIAL"];
@@ -51,7 +52,7 @@ export default function BillingPage() {
 
   const [bills,      setBills]      = useState<Bill[]>([]);
   const [summary,    setSummary]    = useState<Summary>({
-    totalRevenue: 0, totalPending: 0, totalBills: 0,
+    totalBilled: 0, collectedRevenue: 0, pendingRevenue: 0, totalBills: 0,
   });
   const [total,      setTotal]      = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -118,10 +119,10 @@ export default function BillingPage() {
       {/* Billing Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
         {[
-          { label: "Total Revenue", value: `₹${(summary.totalRevenue || 0).toLocaleString("en-IN")}`, icon: IndianRupee, gradient: "from-orange-600 to-red-600", sub: "Lifetime Total" },
+          { label: "Total Billed", value: `₹${(summary.totalBilled || 0).toLocaleString("en-IN")}`, icon: IndianRupee, gradient: "from-orange-600 to-red-600", sub: "Gross Invoiced" },
           { label: "Collected", value: `₹${(summary.collectedRevenue || 0).toLocaleString("en-IN")}`, icon: TrendingUp, gradient: "from-emerald-600 to-teal-600", sub: "Cash Flow" },
           { label: "Pending Payments", value: `₹${(summary.pendingRevenue || 0).toLocaleString("en-IN")}`, icon: Zap, gradient: "from-blue-600 to-indigo-600", sub: "Outstanding Invoices" },
-          { label: "Monthly Avg", value: `₹${((summary.totalRevenue || 0) / 12).toLocaleString("en-IN")}`, icon: PieChart, gradient: "from-purple-600 to-pink-600", sub: "Average per Month" },
+          { label: "Monthly Avg", value: `₹${((summary.totalBilled || 0) / 12).toLocaleString("en-IN")}`, icon: PieChart, gradient: "from-purple-600 to-pink-600", sub: "Average per Month" },
         ].map((item, idx) => (
           <Card key={idx} className="p-8 border-none shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all duration-500 bg-white ring-1 ring-gray-100">
              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${item.gradient} opacity-5 rounded-bl-full`} />
@@ -170,7 +171,7 @@ export default function BillingPage() {
       <Card className="border-none shadow-[0_30px_70px_rgba(0,0,0,0.06)] rounded-[3rem] bg-white overflow-hidden ring-1 ring-gray-100">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40 gap-4">
-            <Spinner size="lg" color="orange" />
+            <Spinner size="lg" color="blue" />
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic animate-pulse">Loading data...</p>
           </div>
         ) : bills.length === 0 ? (

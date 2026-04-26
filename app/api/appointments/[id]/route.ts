@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { getAuthDoctor } from "@/lib/auth";
 import Appointment from "@/models/Appointment";
 import { calcEndTime } from "@/lib/appointmentUtils";
 import { createBillingFromAppointment } from "@/lib/billingUtils";
 
-// GET — Single appointment
+// ── GET — Single appointment ───────────────────────────────
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -36,7 +37,7 @@ export async function GET(
   }
 }
 
-// PUT — Update appointment
+// ── PUT — Update appointment ───────────────────────────────
 // scope: "single" | "future" | "all"
 export async function PUT(
   req: NextRequest,
@@ -57,6 +58,7 @@ export async function PUT(
       );
     }
 
+    // ── Single update ────────────────────────────────────
     if (scope === "single") {
       const currentAppt = await Appointment.findOne({ _id: id, doctorId });
       if (!currentAppt) {
@@ -72,18 +74,27 @@ export async function PUT(
         { new: true }
       );
 
+      if (!appt) {
+        return NextResponse.json(
+          { error: "Appointment not found" },
+          { status: 404 }
+        );
+      }
+
       // Auto-create billing if status changes to PRESENT
+      let autoBillingCreated = false;
       if (
         updates.status === "PRESENT" &&
         currentAppt.status !== "PRESENT"
       ) {
         try {
           await createBillingFromAppointment({
-            doctorId,
+            doctorId: new mongoose.Types.ObjectId(doctorId),
             clientId: appt.clientId,
             appointmentId: appt._id,
             date: appt.date,
           });
+          autoBillingCreated = true;
         } catch (billingError) {
           console.error("Auto-billing failed:", billingError);
           // Don't fail the appointment update if billing fails
@@ -93,11 +104,11 @@ export async function PUT(
       return NextResponse.json({
         message: "Appointment updated",
         appointment: appt,
-        autoBillingCreated: updates.status === "PRESENT" && currentAppt.status !== "PRESENT",
+        autoBillingCreated,
       });
     }
 
-    // Update future or all in recurrence group
+    // ── Future or all in recurrence group ────────────────
     if (scope === "future" || scope === "all") {
       const current = await Appointment.findOne({ _id: id, doctorId });
       if (!current?.recurrenceGroupId) {
@@ -112,7 +123,11 @@ export async function PUT(
         : {};
 
       await Appointment.updateMany(
-        { recurrenceGroupId: current.recurrenceGroupId, doctorId, ...dateFilter },
+        {
+          recurrenceGroupId: current.recurrenceGroupId,
+          doctorId,
+          ...dateFilter,
+        },
         { $set: updates }
       );
 
@@ -131,7 +146,7 @@ export async function PUT(
   }
 }
 
-// DELETE — Cancel appointment
+// ── DELETE — Cancel appointment ────────────────────────────
 // scope query param: "single" | "future" | "all"
 export async function DELETE(
   req: NextRequest,

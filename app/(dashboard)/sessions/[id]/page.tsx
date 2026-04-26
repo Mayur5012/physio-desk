@@ -7,7 +7,7 @@ import Spinner from "@/components/ui/Spinner";
 import Toast, { useToast } from "@/components/ui/Toast";
 import {
   ArrowLeft, User, Clock, Calendar,
-  Activity, ClipboardList, AlertCircle,
+  Activity, ClipboardList, AlertCircle, Sparkles,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 

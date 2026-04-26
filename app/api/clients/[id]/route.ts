@@ -5,9 +5,9 @@ import Client from "@/models/Client";
 import Session from "@/models/Session";
 import Appointment from "@/models/Appointment";
 import Billing from "@/models/Billing";
-import mongoose from "mongoose"; // ← added
+import mongoose from "mongoose";
 
-// GET — Single client
+// ── GET — Single client ────────────────────────────────────
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,7 +15,7 @@ export async function GET(
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id }   = await params;
+    const { id } = await params;
 
     const client = await Client.findOne({ _id: id, doctorId }).lean();
 
@@ -26,7 +26,7 @@ export async function GET(
       );
     }
 
-    const clientObjId = new mongoose.Types.ObjectId(id); // ← cast once
+    const clientObjId = new mongoose.Types.ObjectId(id);
 
     const [
       sessionsCompleted,
@@ -44,30 +44,22 @@ export async function GET(
 
       Appointment.findOne({
         clientId: id,
-        date:     { $gte: new Date() },
-        status:   "SCHEDULED",
+        date: { $gte: new Date() },
+        status: "SCHEDULED",
       })
         .sort({ date: 1 })
         .lean(),
 
-      // ✅ ObjectId cast — was always returning 0
       Billing.aggregate([
-        {
-          $match: { clientId: clientObjId },
-        },
-        {
-          $group: { _id: null, total: { $sum: "$amountPaid" } },
-        },
+        { $match: { clientId: clientObjId } },
+        { $group: { _id: null, total: { $sum: "$amountPaid" } } },
       ]),
 
-      // ✅ ObjectId cast — was always returning 0
       Billing.aggregate([
-        {
-          $match: { clientId: clientObjId },
-        },
+        { $match: { clientId: clientObjId } },
         {
           $group: {
-            _id:   null,
+            _id: null,
             total: {
               $sum: { $subtract: ["$totalFee", "$amountPaid"] },
             },
@@ -79,16 +71,17 @@ export async function GET(
     return NextResponse.json({
       client: {
         ...client,
-        practiceTypes: (client.practiceTypes && client.practiceTypes.length > 0)
-          ? client.practiceTypes
-          : (client.practiceType ? [client.practiceType] : (client.therapyType ? [client.therapyType] : []))
+        practiceTypes:
+          client.practiceTypes && client.practiceTypes.length > 0
+            ? client.practiceTypes
+            : [],
       },
       summary: {
         sessionsCompleted,
-        lastVisit:       lastSession?.createdAt    || null,
-        nextAppointment: nextAppointment            || null,
-        totalPaid:       totalPaid[0]?.total        || 0,
-        totalPending:    totalPending[0]?.total     || 0,
+        lastVisit: lastSession?.createdAt || null,
+        nextAppointment: nextAppointment || null,
+        totalPaid: totalPaid[0]?.total || 0,
+        totalPending: totalPending[0]?.total || 0,
       },
     });
   } catch (error) {
@@ -100,7 +93,7 @@ export async function GET(
   }
 }
 
-// PUT — Update client
+// ── PUT — Update client ────────────────────────────────────
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -108,20 +101,19 @@ export async function PUT(
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id }   = await params;
-    const body     = await req.json();
+    const { id } = await params;
+    const body = await req.json();
 
     console.log("[PUT /clients] body.practiceTypes:", JSON.stringify(body.practiceTypes));
 
     const updateData = { ...body };
-    
+
     // Normalize practiceTypes to array for safety
     if (body.practiceTypes) {
-      const types = Array.isArray(body.practiceTypes) ? body.practiceTypes : [body.practiceTypes];
+      const types = Array.isArray(body.practiceTypes)
+        ? body.practiceTypes
+        : [body.practiceTypes];
       updateData.practiceTypes = types;
-      if (types.length > 0) {
-        updateData.practiceType = types[0];
-      }
     }
 
     const client = await Client.findOneAndUpdate(
@@ -150,7 +142,7 @@ export async function PUT(
   }
 }
 
-// DELETE — Soft delete (discharge)
+// ── DELETE — Soft delete (discharge) ──────────────────────
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -158,7 +150,7 @@ export async function DELETE(
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { id }   = await params;
+    const { id } = await params;
 
     const client = await Client.findOneAndUpdate(
       { _id: id, doctorId },

@@ -12,7 +12,7 @@ import {
   Save, Trash2, Plus, Settings, Clock, Shield, Mail, Award,
   Building2, User, Phone, MapPin, Bell, CalendarClock, Briefcase
 } from "lucide-react";
-import { PRACTICE_TYPES, PRACTICE_TYPE_CONFIG } from "@/lib/constants";
+import { PRACTICE_TYPES, getPracticeConfig } from "@/lib/constants";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -369,7 +369,7 @@ export default function SettingsPage() {
                       <Badge
                         key={spec}
                         label={spec}
-                        variant="primary"
+                        variant="blue"
                         onClose={() => handleRemoveSpecialization(spec)}
                         className="px-4 py-2 rounded-xl bg-white border border-gray-100 shadow-sm text-blue-600 font-bold"
                       />
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                   >
                     <div className="relative z-10">
                       <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${doctor.specializations?.includes(value) ? 'text-blue-100' : 'text-gray-400'}`}>Practice Type</p>
-                      <p className="text-sm font-black italic">{PRACTICE_TYPE_CONFIG[value as any]?.label || value}</p>
+                     <p className="text-sm font-black italic">{getPracticeConfig(value)?.label || value}</p>
                     </div>
                     {doctor.specializations?.includes(value) && (
                       <Shield size={60} className="absolute -right-4 -bottom-4 text-white/10 rotate-12" />

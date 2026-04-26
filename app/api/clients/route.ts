@@ -1,23 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { getAuthDoctor } from "@/lib/auth";
 import Client from "@/models/Client";
 import { createInitialBillingForClient } from "@/lib/billingUtils";
 
-// GET — List all clients with search, filter, pagination
+// ── GET — List all clients ─────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
 
     const { searchParams } = new URL(req.url);
-    const search  = searchParams.get("search")  || "";
-    const status  = searchParams.get("status")  || "ALL";
-    const sort    = searchParams.get("sort")    || "createdAt";
-    const order   = searchParams.get("order")   || "desc";
-    const page    = parseInt(searchParams.get("page")  || "1");
-    const limit   = parseInt(searchParams.get("limit") || "10");
-    const skip    = (page - 1) * limit;
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "ALL";
+    const sort = searchParams.get("sort") || "createdAt";
+    const order = searchParams.get("order") || "desc";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const skip = (page - 1) * limit;
 
     // Build filter
     const filter: any = { doctorId };
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       filter.$or = [
-        { name:  { $regex: search, $options: "i" } },
+        { name: { $regex: search, $options: "i" } },
         { phone: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { chiefComplaint: { $regex: search, $options: "i" } },
@@ -43,12 +44,15 @@ export async function GET(req: NextRequest) {
         .skip(skip)
         .limit(limit)
         .lean()
-        .then(docs => docs.map((c: any) => ({
-          ...c,
-          practiceTypes: (c.practiceTypes && c.practiceTypes.length > 0)
-            ? c.practiceTypes
-            : (c.practiceType ? [c.practiceType] : (c.therapyType ? [c.therapyType] : []))
-        }))),
+        .then(docs =>
+          docs.map((c: any) => ({
+            ...c,
+            practiceTypes:
+              c.practiceTypes && c.practiceTypes.length > 0
+                ? c.practiceTypes
+                : [],
+          }))
+        ),
       Client.countDocuments(filter),
     ]);
 
@@ -68,7 +72,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST — Create new client
+// ── POST — Create new client ───────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -85,6 +89,7 @@ export async function POST(req: NextRequest) {
       reminderEnabled,
     } = body;
 
+    // Resolve practiceTypes from whichever field is provided
     let finalPracticeTypes: string[] = [];
     if (Array.isArray(practiceTypes)) {
       finalPracticeTypes = practiceTypes;
@@ -96,11 +101,18 @@ export async function POST(req: NextRequest) {
       finalPracticeTypes = [therapyType];
     }
 
-    console.log("[POST /clients] body.practiceTypes:", JSON.stringify(practiceTypes), "| finalPracticeTypes:", JSON.stringify(finalPracticeTypes));
+    console.log(
+      "[POST /clients] body.practiceTypes:",
+      JSON.stringify(practiceTypes),
+      "| finalPracticeTypes:",
+      JSON.stringify(finalPracticeTypes)
+    );
 
     // Validate required fields
-    if (!name || !age || !gender || !phone || !chiefComplaint ||
-        finalPracticeTypes.length === 0) {
+    if (
+      !name || !age || !gender || !phone || !chiefComplaint ||
+      finalPracticeTypes.length === 0
+    ) {
       return NextResponse.json(
         { error: "Please select at least one service category" },
         { status: 400 }
@@ -109,24 +121,27 @@ export async function POST(req: NextRequest) {
 
     const client = await Client.create({
       doctorId,
-      name, age: Number(age), gender, phone,
-      email:            email || undefined,
-      address:          address || undefined,
+      name,
+      age: Number(age),
+      gender,
+      phone,
+      email: email || undefined,
+      address: address || undefined,
       emergencyContact: emergencyContact || undefined,
-      referralSource:   referralSource || undefined,
-      chiefComplaint, bodyPart: bodyPart || undefined,
-      bodySide:         bodySide || "BOTH",
-      medicalHistory:   medicalHistory || undefined,
-      diagnosis:        diagnosis || undefined,
-      practiceTypes:    finalPracticeTypes,
-      // DEBUG: log what we're saving
-      practiceType:     finalPracticeTypes[0],
-      therapyType:      therapyType || undefined,
-      clientType:       clientType || "NEW",
+      referralSource: referralSource || undefined,
+      chiefComplaint,
+      bodyPart: bodyPart || undefined,
+      bodySide: bodySide || "BOTH",
+      medicalHistory: medicalHistory || undefined,
+      diagnosis: diagnosis || undefined,
+      practiceTypes: finalPracticeTypes,
+      therapyType: therapyType || undefined,
+      clientType: clientType || "NEW",
       totalSessionsPlanned: totalSessionsPlanned
-        ? Number(totalSessionsPlanned) : undefined,
-      sessionFee:       sessionFee ? Number(sessionFee) : 0,
-      reminderEnabled:  reminderEnabled !== false,
+        ? Number(totalSessionsPlanned)
+        : undefined,
+      sessionFee: sessionFee ? Number(sessionFee) : 0,
+      reminderEnabled: reminderEnabled !== false,
     });
 
     // Auto-create initial billing entry
@@ -134,7 +149,7 @@ export async function POST(req: NextRequest) {
     if (sessionFee && Number(sessionFee) > 0) {
       try {
         await createInitialBillingForClient(
-          doctorId,
+          new mongoose.Types.ObjectId(doctorId),
           client._id,
           Number(sessionFee)
         );

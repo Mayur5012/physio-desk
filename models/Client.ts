@@ -24,19 +24,21 @@ export interface IClient extends Document {
 
   // Medical / Service Related
   chiefComplaint: string;
-  
+
   // Body-specific (optional - not all practices track this)
   bodyPart?: string;
   bodySide?: BodySide;
-  
+
   medicalHistory?: string;
   diagnosis?: string;
-  
+
   // Practice types (multi-select supported)
   practiceTypes: PracticeType[];
-  
+
   // Backward compatibility
-  /** @deprecated Use practiceType instead */
+  /** @deprecated Use practiceTypes instead */
+  practiceType?: string;
+  /** @deprecated Use practiceTypes instead */
   therapyType?: TherapyType;
 
   clientType: ClientType;
@@ -58,42 +60,42 @@ export interface IClient extends Document {
 
 const ClientSchema = new Schema<IClient>(
   {
-    doctorId:        { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
 
-    name:            { type: String, required: true },
-    age:             { type: Number, required: true },
-    gender:          { type: String, enum: ["MALE", "FEMALE", "OTHER"], required: true },
-    phone:           { type: String, required: true },
-    email:           { type: String, lowercase: true },
-    address:         { type: String },
-    emergencyContact:{ type: String },
-    photoUrl:        { type: String },
-    referralSource:  { type: String },
+    name: { type: String, required: true },
+    age: { type: Number, required: true },
+    gender: { type: String, enum: ["MALE", "FEMALE", "OTHER"], required: true },
+    phone: { type: String, required: true },
+    email: { type: String, lowercase: true },
+    address: { type: String },
+    emergencyContact: { type: String },
+    photoUrl: { type: String },
+    referralSource: { type: String },
 
-    chiefComplaint:  { type: String, required: true },
-    bodyPart:        { type: String },
-    bodySide:        { type: String, enum: ["LEFT", "RIGHT", "BOTH"], default: "BOTH" },
-    medicalHistory:  { type: String },
-    diagnosis:       { type: String },
-    
+    chiefComplaint: { type: String, required: true },
+    bodyPart: { type: String },
+    bodySide: { type: String, enum: ["LEFT", "RIGHT", "BOTH"], default: "BOTH" },
+    medicalHistory: { type: String },
+    diagnosis: { type: String },
+
     // Generic practice types (multi-select)
-    practiceTypes:    { type: [String], default: [] },
-    
+    practiceTypes: { type: [String], default: [] },
+
     // Backward compatibility
-    practiceType:    { type: String },
-    therapyType:     { type: String, enum: ["PHYSIOTHERAPY", "ACUPRESSURE", "COMBINED"] },
-    
-    clientType:      { type: String, enum: ["NEW", "REGULAR", "ONE_TIME"], default: "NEW" },
-    status:          { type: String, enum: ["ACTIVE", "INACTIVE", "DISCHARGED"], default: "ACTIVE" },
+    practiceType: { type: String },
+    therapyType: { type: String, enum: ["PHYSIOTHERAPY", "ACUPRESSURE", "COMBINED"] },
+
+    clientType: { type: String, enum: ["NEW", "REGULAR", "ONE_TIME"], default: "NEW" },
+    status: { type: String, enum: ["ACTIVE", "INACTIVE", "DISCHARGED"], default: "ACTIVE" },
 
     totalSessionsPlanned: { type: Number },
-    sessionFee:           { type: Number, default: 0 },
-    reminderEnabled:      { type: Boolean, default: true },
+    sessionFee: { type: Number, default: 0 },
+    reminderEnabled: { type: Boolean, default: true },
 
     // Insurance info
-    insuranceProvider:    { type: String },
-    insuranceId:          { type: String },
-    insuranceActivation:  { type: Date },
+    insuranceProvider: { type: String },
+    insuranceId: { type: String },
+    insuranceActivation: { type: Date },
   },
   { timestamps: true }
 );
@@ -105,7 +107,7 @@ ClientSchema.index({ name: 1, doctorId: 1 });
 ClientSchema.index({ phone: 1, doctorId: 1 });
 ClientSchema.index({ doctorId: 1, name: "text", phone: "text" });
 
-// Force schema refresh — delete cached model so practiceTypes field is recognized
+// Force schema refresh
 if (mongoose.models.Client) {
   delete mongoose.models.Client;
 }

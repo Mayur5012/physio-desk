@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import ServiceType from "@/models/ServiceType";
-import { getAuthenticatedDoctor } from "@/lib/auth";
+import { getAuthDoctor } from "@/lib/auth";
 
 /**
  * GET /api/services
@@ -10,13 +10,13 @@ import { getAuthenticatedDoctor } from "@/lib/auth";
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
-    const doctor = await getAuthenticatedDoctor(req);
+    const doctorId = await getAuthDoctor(req);
 
     const { searchParams } = new URL(req.url);
     const practiceType = searchParams.get("practiceType");
     const isActive = searchParams.get("isActive") !== "false";
 
-    const query: any = { doctorId: doctor._id };
+    const query: any = { doctorId: doctorId };
     if (practiceType) query.practiceType = practiceType;
     if (isActive) query.isActive = true;
 
@@ -38,12 +38,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
-    const doctor = await getAuthenticatedDoctor(req);
+    const doctorId = await getAuthDoctor(req);
     const body = await req.json();
 
     const service = new ServiceType({
       ...body,
-      doctorId: doctor._id,
+      doctorId: doctorId,
     });
 
     await service.save();

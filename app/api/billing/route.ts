@@ -32,10 +32,11 @@ export async function GET(req: NextRequest) {
         { $match: { doctorId: new (require("mongoose").Types.ObjectId)(doctorId) } },
         {
           $group: {
-            _id:          null,
-            totalRevenue: { $sum: "$amountPaid" },
-            totalPending: { $sum: { $subtract: ["$totalFee", "$amountPaid"] } },
-            totalBills:   { $sum: 1 },
+            _id:              null,
+            totalBilled:      { $sum: "$totalFee" },
+            collectedRevenue: { $sum: "$amountPaid" },
+            pendingRevenue:   { $sum: { $subtract: ["$totalFee", "$amountPaid"] } },
+            totalBills:       { $sum: 1 },
           },
         },
       ]),
@@ -47,9 +48,10 @@ export async function GET(req: NextRequest) {
       page,
       totalPages: Math.ceil(total / limit),
       summary: summary[0] || {
-        totalRevenue: 0,
-        totalPending: 0,
-        totalBills:   0,
+        totalBilled:      0,
+        collectedRevenue: 0,
+        pendingRevenue:   0,
+        totalBills:       0,
       },
     });
   } catch (error) {

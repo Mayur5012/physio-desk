@@ -9,8 +9,9 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Toast, { useToast } from "@/components/ui/Toast";
-import { ArrowLeft, Save, Minus, Plus } from "lucide-react";
-import { format } from "date-fns";
+import {
+  ArrowLeft, Save, Minus, Plus, Users, Sparkles, Activity, ClipboardList,
+} from "lucide-react";import { format } from "date-fns";
 
 const TECHNIQUES = [
   "Manual Therapy", "Dry Needling", "Ultrasound",

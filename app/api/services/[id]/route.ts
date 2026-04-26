@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import ServiceType from "@/models/ServiceType";
-import { getAuthenticatedDoctor } from "@/lib/auth";
+import { getAuthDoctor } from "@/lib/auth";
 import mongoose from "mongoose";
 
 /**
@@ -10,14 +10,15 @@ import mongoose from "mongoose";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
-    const doctor = await getAuthenticatedDoctor(req);
+    const doctorId = await getAuthDoctor(req);
 
-    const service = await ServiceType.findById(params.id);
-    if (!service || service.doctorId.toString() !== doctor._id.toString()) {
+    const service = await ServiceType.findById(id);
+    if (!service || service.doctorId.toString() !== doctorId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -36,15 +37,16 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
-    const doctor = await getAuthenticatedDoctor(req);
+    const doctorId = await getAuthDoctor(req);
     const body = await req.json();
 
-    const service = await ServiceType.findById(params.id);
-    if (!service || service.doctorId.toString() !== doctor._id.toString()) {
+    const service = await ServiceType.findById(id);
+    if (!service || service.doctorId.toString() !== doctorId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -66,18 +68,19 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await connectDB();
-    const doctor = await getAuthenticatedDoctor(req);
+    const doctorId = await getAuthDoctor(req);
 
-    const service = await ServiceType.findById(params.id);
-    if (!service || service.doctorId.toString() !== doctor._id.toString()) {
+    const service = await ServiceType.findById(id);
+    if (!service || service.doctorId.toString() !== doctorId) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    await ServiceType.deleteOne({ _id: params.id });
+    await ServiceType.deleteOne({ _id: id });
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
