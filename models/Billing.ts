@@ -36,7 +36,8 @@ const BillingSchema = new Schema<IBilling>(
 );
 
 BillingSchema.index({ doctorId: 1, date: -1 });
-BillingSchema.index({ doctorId: 1, clientId: 1 });
+BillingSchema.index({ doctorId: 1, status: 1 });
+BillingSchema.index({ doctorId: 1, clientId: 1, date: -1 });
 
 const Billing: Model<IBilling> =
   mongoose.models.Billing || mongoose.model<IBilling>("Billing", BillingSchema);

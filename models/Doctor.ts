@@ -1,4 +1,17 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { PracticeType } from "@/lib/constants";
+
+/**
+ * License/Certification interface
+ */
+export interface ILicense {
+  name: string;                    // e.g., "DPT" (Doctor of Physical Therapy)
+  issuingBody?: string;            // e.g., "American Physical Therapy Association"
+  licenseNumber?: string;
+  issueDate?: Date;
+  expiryDate?: Date;
+  practiceTypes: PracticeType[];  // Which practice types this covers
+}
 
 export interface IDoctor extends Document {
   name: string;
@@ -8,6 +21,10 @@ export interface IDoctor extends Document {
   passwordHash: string;
   address?: string;
   logoUrl?: string;
+
+  // Practice specializations (can have multiple)
+  specializations: PracticeType[];
+  licenses: ILicense[];
 
   // Working hours
   workStartTime: string;
@@ -29,9 +46,28 @@ export interface IDoctor extends Document {
   noshowFollowup: boolean;
   inactiveAlertDays: number;
 
+  // Subscription fields
+  trialStartedAt: Date;
+  subscriptionStatus: 'trial' | 'active' | 'expired' | 'canceled';
+  subscriptionExpiry: Date;
+  razorpaySubscriptionId?: string;
+  razorpayPlanId?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
+
+const LicenseSchema = new Schema<ILicense>(
+  {
+    name: { type: String, required: true },
+    issuingBody: { type: String },
+    licenseNumber: { type: String },
+    issueDate: { type: Date },
+    expiryDate: { type: Date },
+    practiceTypes: [{ type: String }],
+  },
+  { _id: false }
+);
 
 const DoctorSchema = new Schema<IDoctor>(
   {
@@ -42,6 +78,10 @@ const DoctorSchema = new Schema<IDoctor>(
     passwordHash:   { type: String, required: true },
     address:        { type: String },
     logoUrl:        { type: String },
+
+    // Specializations
+    specializations: [{ type: String }],
+    licenses:       [LicenseSchema],
 
     workStartTime:  { type: String, default: "07:00" },
     workEndTime:    { type: String, default: "21:00" },
@@ -59,6 +99,13 @@ const DoctorSchema = new Schema<IDoctor>(
     digestTime:           { type: String,  default: "21:00" },
     noshowFollowup:       { type: Boolean, default: true },
     inactiveAlertDays:    { type: Number,  default: 7 },
+
+    // Subscription
+    trialStartedAt:       { type: Date,    default: Date.now },
+    subscriptionStatus:   { type: String,  enum: ['trial', 'active', 'expired', 'canceled'], default: 'trial' },
+    subscriptionExpiry:   { type: Date,    default: () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) }, // 3 days trial
+    razorpaySubscriptionId: { type: String },
+    razorpayPlanId:       { type: String },
   },
   { timestamps: true }
 );

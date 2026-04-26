@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PhysioDesk",
-  description: "Clinic Management System",
+  description: "Clinic Manager",
 };
 
 export default function RootLayout({

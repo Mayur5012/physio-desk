@@ -10,7 +10,11 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Spinner from "@/components/ui/Spinner";
 import Toast, { useToast } from "@/components/ui/Toast";
-import { ArrowLeft, Save } from "lucide-react";
+import {
+  ArrowLeft, Save, User, Activity, HeartPulse,
+  Clock, Check
+} from "lucide-react";
+import { PRACTICE_TYPES, PRACTICE_CATEGORIES, PRACTICE_TYPE_CONFIG } from "@/lib/constants";
 
 const schema = z.object({
   name:             z.string().min(2),
@@ -26,7 +30,7 @@ const schema = z.object({
   bodySide:         z.enum(["LEFT", "RIGHT", "BOTH"]),
   medicalHistory:   z.string().optional(),
   diagnosis:        z.string().optional(),
-  therapyType:      z.enum(["PHYSIOTHERAPY", "ACUPRESSURE", "COMBINED"]),
+  practiceTypes:    z.array(z.string()).min(1, "Select at least one service type"),
   clientType:       z.enum(["NEW", "REGULAR", "ONE_TIME"]),
   status:           z.enum(["ACTIVE", "INACTIVE", "DISCHARGED"]),
   totalSessionsPlanned: z.coerce.number().optional(),
@@ -35,8 +39,24 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-const RADIO = "flex items-center gap-2 cursor-pointer";
-const RADIO_INPUT = "w-4 h-4 text-blue-600";
+const RADIO = "relative flex items-center gap-3 cursor-pointer group";
+const RADIO_INPUT = "w-5 h-5 appearance-none border-2 border-gray-200 rounded-full checked:border-blue-600 checked:bg-blue-600 transition-all cursor-pointer";
+const INPUT_STYLE = "rounded-2xl bg-gray-50/50 border-gray-100 py-4 font-bold italic focus:bg-white transition-all";
+const TEXTAREA_STYLE = "w-full px-4 sm:px-6 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl sm:rounded-3xl text-sm font-bold italic focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:bg-white transition-all resize-none shadow-sm";
+
+const Section = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
+  <Card className="p-5 sm:p-8 lg:p-10 border-none shadow-[0_20px_60px_rgba(0,0,0,0.04)] bg-white rounded-2xl sm:rounded-[2.5rem] ring-1 ring-gray-100 overflow-visible relative">
+    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-10 pb-4 sm:pb-6 border-b border-gray-50">
+       <div className="p-2.5 sm:p-3 bg-gray-900 text-white rounded-xl sm:rounded-2xl shadow-xl shadow-gray-200 rotate-3">
+          <Icon size={18} />
+       </div>
+       <h3 className="text-[10px] sm:text-[11px] font-black text-gray-900 uppercase tracking-[0.15em] sm:tracking-[0.2em] italic">
+          {title}
+       </h3>
+    </div>
+    {children}
+  </Card>
+);
 
 export default function EditClientPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,21 +66,37 @@ export default function EditClientPage() {
   const [fetching, setFetching] = useState(true);
 
   const {
-    register, handleSubmit, reset,
+    register, handleSubmit, reset, watch, setValue,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) as any});
+
+  // Controlled multi-select for service types
+  const selectedTypes = watch("practiceTypes") || [];
+
+  const toggleServiceType = (type: string) => {
+    const current = selectedTypes;
+    if (current.includes(type)) {
+      setValue("practiceTypes", current.filter((t: string) => t !== type), { shouldValidate: true });
+    } else {
+      setValue("practiceTypes", [...current, type], { shouldValidate: true });
+    }
+  };
 
   useEffect(() => {
     api.get(`/clients/${id}`)
       .then(({ data }) => {
         const c = data.client;
+        const types = c.practiceTypes && c.practiceTypes.length > 0
+          ? c.practiceTypes
+          : (c.practiceType ? [c.practiceType] : (c.therapyType ? [c.therapyType] : [PRACTICE_TYPES.PHYSIOTHERAPY]));
         reset({
           ...c,
+          practiceTypes: types,
           age:   c.age?.toString(),
           email: c.email || "",
         });
       })
-      .catch(() => showToast("Failed to load client", "error"))
+      .catch(() => showToast("Failed to load patient", "error"))
       .finally(() => setFetching(false));
   }, [id]);
 
@@ -68,7 +104,7 @@ export default function EditClientPage() {
     setLoading(true);
     try {
       await api.put(`/clients/${id}`, data);
-      showToast("Client updated successfully!", "success");
+      showToast("Patient updated successfully!", "success");
       setTimeout(() => router.push(`/clients/${id}`), 1200);
     } catch (err: any) {
       showToast(err.response?.data?.error || "Update failed", "error");
@@ -86,179 +122,207 @@ export default function EditClientPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <div className="flex items-center gap-3">
+    <div className="max-w-3xl mx-auto space-y-5 sm:space-y-8 px-1 sm:px-2 pb-32">
+      <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={() => router.back()}
-          className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500"
+          className="p-3 sm:p-4 bg-white shadow-xl shadow-gray-100 rounded-xl sm:rounded-[1.25rem] hover:scale-110 transition-transform text-gray-400 hover:text-gray-900 border border-gray-50 shrink-0"
         >
           <ArrowLeft size={18} />
         </button>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Edit Client</h2>
-          <p className="text-sm text-gray-500">Update client information</p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+             <span className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Management</span>
+             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+          </div>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 tracking-tight italic">
+            Edit Profile<span className="text-blue-600">.</span>
+          </h2>
+          <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-[0.15em] mt-1">Update patient information</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
-            Personal Details
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Input {...register("name")} label="Full Name" required
-                error={errors.name?.message} />
-            </div>
-            <Input {...register("age")} label="Age" required type="number"
-              error={errors.age?.message} />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gender
-              </label>
-              <div className="flex gap-4">
-                {["MALE","FEMALE","OTHER"].map((g) => (
-                  <label key={g} className={RADIO}>
-                    <input {...register("gender")} type="radio"
-                      value={g} className={RADIO_INPUT} />
-                    <span className="text-sm text-gray-700">
-                      {g.charAt(0)+g.slice(1).toLowerCase()}
-                    </span>
-                  </label>
-                ))}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-10 lg:space-y-12">
+        <Section title="Personal Information" icon={User}>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-5 sm:gap-y-8">
+              <div className="sm:col-span-2">
+                <Input {...register("name")} label="Full Name" required placeholder="e.g. John Sharma" className={INPUT_STYLE} error={errors.name?.message} />
               </div>
-            </div>
-            <Input {...register("phone")} label="Phone" required
-              error={errors.phone?.message} />
-            <Input {...register("email")} label="Email" type="email"
-              error={errors.email?.message} />
-            <div className="sm:col-span-2">
-              <Input {...register("address")} label="Address" />
-            </div>
-            <Input {...register("emergencyContact")}
-              label="Emergency Contact" />
-            <Select {...register("status")} label="Status"
-              options={[
-                { value: "ACTIVE",     label: "Active" },
-                { value: "INACTIVE",   label: "Inactive" },
-                { value: "DISCHARGED", label: "Discharged" },
-              ]}
-            />
-          </div>
-        </Card>
+              <Input {...register("age")} label="Age" required type="number" placeholder="34" className={INPUT_STYLE} error={errors.age?.message} />
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 sm:mb-4 italic ml-2">Gender</label>
+                <div className="flex gap-4 sm:gap-8 bg-gray-50/50 p-2 rounded-xl sm:rounded-2xl border border-gray-100 w-fit">
+                  {["MALE", "FEMALE", "OTHER"].map((g) => (
+                    <label key={g} className={RADIO}>
+                      <input {...register("gender")} type="radio" value={g} className={RADIO_INPUT} />
+                      <span className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest italic group-hover:text-gray-900 transition-colors">{g}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Input {...register("phone")} label="Phone Number" required type="tel" placeholder="9876543210" className={INPUT_STYLE} error={errors.phone?.message} />
+              <Input {...register("email")} label="Email Address" type="email" placeholder="john@email.com" className={INPUT_STYLE} error={errors.email?.message} />
+              <div className="sm:col-span-2">
+                <Input {...register("address")} label="Address" placeholder="Full address" className={INPUT_STYLE} />
+              </div>
+              <Input {...register("emergencyContact")} label="Emergency Contact" placeholder="Name & Contact" className={INPUT_STYLE} />
+              <Select {...register("status")} label="Patient Status" className={INPUT_STYLE}
+                options={[
+                  { value: "ACTIVE",     label: "Active" },
+                  { value: "INACTIVE",   label: "Inactive" },
+                  { value: "DISCHARGED", label: "Archived" },
+                ]}
+              />
+           </div>
+        </Section>
 
-        <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
-            Medical Details
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <Input {...register("chiefComplaint")} label="Chief Complaint"
-                required error={errors.chiefComplaint?.message} />
-            </div>
-            <Input {...register("bodyPart")} label="Body Part" required
-              error={errors.bodyPart?.message} />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Side
-              </label>
-              <div className="flex gap-4">
-                {["LEFT","RIGHT","BOTH"].map((s) => (
-                  <label key={s} className={RADIO}>
-                    <input {...register("bodySide")} type="radio"
-                      value={s} className={RADIO_INPUT} />
-                    <span className="text-sm text-gray-700">
-                      {s.charAt(0)+s.slice(1).toLowerCase()}
-                    </span>
-                  </label>
-                ))}
+        <Section title="Medical Profile" icon={Activity}>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-5 sm:gap-y-8">
+              <div className="sm:col-span-2">
+                <Input {...register("chiefComplaint")} label="Chief Complaint" required placeholder="Description" className={INPUT_STYLE} error={errors.chiefComplaint?.message} />
               </div>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Medical History
-              </label>
-              <textarea {...register("medicalHistory")} rows={3}
-                className="w-full px-4 py-2.5 border border-gray-300 
-                           rounded-lg text-sm focus:outline-none focus:ring-2 
-                           focus:ring-blue-500 resize-none" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Diagnosis
-              </label>
-              <textarea {...register("diagnosis")} rows={2}
-                className="w-full px-4 py-2.5 border border-gray-300 
-                           rounded-lg text-sm focus:outline-none focus:ring-2 
-                           focus:ring-blue-500 resize-none" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Therapy Type
-              </label>
-              <div className="flex gap-4">
-                {[
-                  ["PHYSIOTHERAPY","Physiotherapy"],
-                  ["ACUPRESSURE","Acupressure"],
-                  ["COMBINED","Combined"],
-                ].map(([v, l]) => (
-                  <label key={v} className={RADIO}>
-                    <input {...register("therapyType")} type="radio"
-                      value={v} className={RADIO_INPUT} />
-                    <span className="text-sm text-gray-700">{l}</span>
-                  </label>
-                ))}
+              <Input {...register("bodyPart")} label="Affected Part" required placeholder="e.g. Back" className={INPUT_STYLE} error={errors.bodyPart?.message} />
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 sm:mb-4 italic ml-2">Side</label>
+                <div className="flex gap-4 sm:gap-8 bg-gray-50/50 p-2 rounded-xl sm:rounded-2xl border border-gray-100 w-fit">
+                  {["LEFT", "RIGHT", "BOTH"].map((s) => (
+                    <label key={s} className={RADIO}>
+                      <input {...register("bodySide")} type="radio" value={s} className={RADIO_INPUT} />
+                      <span className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-widest italic group-hover:text-gray-900 transition-colors">{s}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        </Card>
 
-        <Card className="p-6 space-y-4">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase 
-                         tracking-wider">
-            Package & Billing
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input {...register("totalSessionsPlanned")}
-              label="Total Sessions Planned" type="number" />
-            <Input {...register("sessionFee")}
-              label="Session Fee (₹)" type="number" />
-            <div className="sm:col-span-2">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input {...register("reminderEnabled")} type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300 
-                             text-blue-600 focus:ring-blue-500" />
-                <span className="text-sm font-medium text-gray-700">
-                  Send email reminders to this client
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 italic ml-2">Medical History</label>
+                <textarea {...register("medicalHistory")} rows={3} className={TEXTAREA_STYLE} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 italic ml-2">Diagnosis</label>
+                <textarea {...register("diagnosis")} rows={2} className={TEXTAREA_STYLE} />
+              </div>
+           </div>
+        </Section>
+
+        {/* ── Service Type Selection (CONTROLLED MULTI-SELECT) ── */}
+        <Section title="Service Type" icon={HeartPulse}>
+          <div className="space-y-6 sm:space-y-8">
+            {/* Selected count */}
+            <div className="flex items-center justify-between px-1">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">
+                {selectedTypes.length > 0 ? `${selectedTypes.length} service${selectedTypes.length > 1 ? 's' : ''} selected` : 'No service selected'}
+              </p>
+              {errors.practiceTypes && (
+                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest italic">{errors.practiceTypes.message}</p>
+              )}
+            </div>
+
+            {/* Selected badges */}
+            {selectedTypes.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl border border-blue-100">
+                {selectedTypes.map((type: string) => {
+                  const config = PRACTICE_TYPE_CONFIG[type as keyof typeof PRACTICE_TYPE_CONFIG];
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => toggleServiceType(type)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest italic hover:bg-blue-700 transition-colors group"
+                    >
+                      {config?.label || type}
+                      <span className="opacity-60 group-hover:opacity-100 transition-opacity">&times;</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Category grid */}
+            {Object.entries(PRACTICE_CATEGORIES).map(([cat, types]) => (
+              <div key={cat} className="space-y-4">
+                <h5 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] px-1 sm:px-2 flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                   {cat.replace(/_/g, " ")}
+                </h5>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+                  {types.map((type) => {
+                    const config = PRACTICE_TYPE_CONFIG[type as keyof typeof PRACTICE_TYPE_CONFIG];
+                    const isSelected = selectedTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => toggleServiceType(type)}
+                        className={`relative p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl border transition-all text-center group ${
+                          isSelected
+                            ? "border-blue-600 bg-blue-50 shadow-xl shadow-blue-100 ring-1 ring-blue-200"
+                            : "border-gray-100 bg-white shadow-sm hover:bg-gray-50 hover:border-gray-200"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-blue-600 text-white p-0.5 sm:p-1 rounded-full">
+                            <Check size={8} className="sm:w-[10px] sm:h-[10px]" />
+                          </div>
+                        )}
+                        <p className={`text-[8px] sm:text-[9px] font-black uppercase tracking-wider sm:tracking-widest italic leading-tight ${
+                          isSelected ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600"
+                        } transition-colors`}>
+                          {config?.label || type}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Visit Configuration" icon={Clock}>
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 sm:gap-x-10 gap-y-5 sm:gap-y-8">
+              <div className="sm:col-span-2">
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 sm:mb-4 italic ml-2">Visit Plan</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {[
+                    { value: "NEW",      label: "New Cycle",   desc: "Complete evaluation" },
+                    { value: "REGULAR",  label: "Follow-up",   desc: "Active plan" },
+                    { value: "ONE_TIME", label: "Single Visit", desc: "One-off consultation" },
+                  ].map((v) => (
+                    <label key={v.value} className="relative cursor-pointer group">
+                      <input {...register("clientType")} type="radio" value={v.value} className="peer sr-only" />
+                      <div className="p-4 sm:p-5 lg:p-6 bg-white border border-gray-100 rounded-xl sm:rounded-2xl shadow-sm peer-checked:border-blue-600 peer-checked:bg-blue-50/50 peer-checked:shadow-xl peer-checked:shadow-blue-100 transition-all group-hover:bg-gray-50 text-left">
+                         <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest italic leading-none mb-1">{v.label}</p>
+                         <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter italic">{v.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <Input {...register("totalSessionsPlanned")} label="Sessions Planned" type="number" className={INPUT_STYLE} />
+              <Input {...register("sessionFee")} label="Service Fee (₹)" type="number" className={INPUT_STYLE} />
+           </div>
+        </Section>
+
+        {/* Sticky Save Bar */}
+        <div className="sticky bottom-4 sm:bottom-10 left-0 right-0 z-50 px-2 sm:px-4">
+           <div className="max-w-3xl mx-auto bg-gray-900/90 backdrop-blur-3xl rounded-xl sm:rounded-[2.5rem] p-3 sm:p-4 border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.4)] flex items-center justify-between gap-3 sm:gap-6 overflow-hidden">
+              <button type="button" onClick={() => router.back()} className="px-4 sm:px-10 py-3 sm:py-5 bg-white/5 text-gray-400 hover:text-white rounded-lg sm:rounded-[1.5rem] text-[9px] sm:text-[10px] font-black uppercase tracking-widest italic transition-all hover:bg-white/10">Cancel</button>
+              <div className="hidden sm:flex flex-1 items-center justify-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                 <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.3em] italic">Updating Profile</span>
+              </div>
+              <button type="submit" disabled={loading} className="group relative px-6 sm:px-12 py-3 sm:py-5 bg-blue-600 text-white rounded-lg sm:rounded-[1.5rem] shadow-2xl shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 overflow-hidden">
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="relative z-10 flex items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-black uppercase tracking-widest italic">
+                  {loading ? <><Clock size={14} className="animate-spin" /> Updating...</> : <><Save size={14} /> Save Profile</>}
                 </span>
-              </label>
-            </div>
-          </div>
-        </Card>
-
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 
-                        -mx-6 px-6 py-4 flex gap-3 justify-end">
-          <button type="button" onClick={() => router.back()}
-            className="px-5 py-2.5 border border-gray-300 rounded-lg 
-                       text-sm font-medium text-gray-700 hover:bg-gray-50 
-                       transition">
-            Cancel
-          </button>
-          <button type="submit" disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 
-                       hover:bg-blue-700 disabled:bg-blue-400 text-white 
-                       rounded-lg text-sm font-medium transition">
-            <Save size={16} />
-            {loading ? "Saving..." : "Save Changes"}
-          </button>
+              </button>
+           </div>
         </div>
       </form>
 
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
     </div>
   );
 }

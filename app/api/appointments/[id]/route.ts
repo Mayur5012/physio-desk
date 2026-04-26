@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import { getAuthDoctor } from "@/lib/auth";
 import Appointment from "@/models/Appointment";
 import { calcEndTime } from "@/lib/appointmentUtils";
+import { createBillingFromAppointment } from "@/lib/billingUtils";
 
 // GET — Single appointment
 export async function GET(
@@ -57,20 +58,42 @@ export async function PUT(
     }
 
     if (scope === "single") {
-      const appt = await Appointment.findOneAndUpdate(
-        { _id: id, doctorId },
-        { $set: updates },
-        { new: true }
-      );
-      if (!appt) {
+      const currentAppt = await Appointment.findOne({ _id: id, doctorId });
+      if (!currentAppt) {
         return NextResponse.json(
           { error: "Appointment not found" },
           { status: 404 }
         );
       }
+
+      const appt = await Appointment.findOneAndUpdate(
+        { _id: id, doctorId },
+        { $set: updates },
+        { new: true }
+      );
+
+      // Auto-create billing if status changes to PRESENT
+      if (
+        updates.status === "PRESENT" &&
+        currentAppt.status !== "PRESENT"
+      ) {
+        try {
+          await createBillingFromAppointment({
+            doctorId,
+            clientId: appt.clientId,
+            appointmentId: appt._id,
+            date: appt.date,
+          });
+        } catch (billingError) {
+          console.error("Auto-billing failed:", billingError);
+          // Don't fail the appointment update if billing fails
+        }
+      }
+
       return NextResponse.json({
         message: "Appointment updated",
         appointment: appt,
+        autoBillingCreated: updates.status === "PRESENT" && currentAppt.status !== "PRESENT",
       });
     }
 

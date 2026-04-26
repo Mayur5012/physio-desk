@@ -24,10 +24,7 @@ export async function GET(req: NextRequest) {
     todayEnd.setHours(23, 59, 59, 999);
 
     const [
-      totalClients,
-      activeClients,
-      inactiveClients,
-      dischargedClients,
+      clientStatsRaw,
       todayAppointments,
       sessionsThisMonth,
       newClientsThisMonth,
@@ -36,13 +33,10 @@ export async function GET(req: NextRequest) {
       noShowsThisWeek,
     ] = await Promise.all([
 
-      Client.countDocuments({ doctorId }),
-
-      Client.countDocuments({ doctorId, status: "ACTIVE" }),
-
-      Client.countDocuments({ doctorId, status: "INACTIVE" }),
-
-      Client.countDocuments({ doctorId, status: "DISCHARGED" }),
+      Client.aggregate([
+        { $match: { doctorId: doctorObjId } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
 
       Appointment.countDocuments({
         doctorId,
@@ -102,11 +96,17 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    const clientStats = clientStatsRaw.reduce((acc: any, curr: any) => {
+      acc[curr._id] = curr.count;
+      acc.total += curr.count;
+      return acc;
+    }, { total: 0, ACTIVE: 0, INACTIVE: 0, DISCHARGED: 0 });
+
     return NextResponse.json({
-      totalClients,
-      activeClients,
-      inactiveClients,
-      dischargedClients,
+      totalClients:      clientStats.total,
+      activeClients:     clientStats.ACTIVE,
+      inactiveClients:   clientStats.INACTIVE,
+      dischargedClients: clientStats.DISCHARGED,
       todayAppointments,
       sessionsThisMonth,
       newClientsThisMonth,

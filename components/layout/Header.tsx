@@ -3,13 +3,13 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/lib/api";
 import {
-  Menu, Bell, User, LogOut,
-  Settings, ChevronDown,
+  Bell as BellIcon, Menu as MenuIcon, User as UserIcon, LogOut as LogOutIcon, 
+  Settings as SettingsIcon, ChevronDown as ChevronDownIcon, Activity, Sparkles
 } from "lucide-react";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/dashboard":    "Dashboard",
-  "/clients":      "Clients",
+  "/dashboard":    "Overview",
+  "/clients":      "Patients",
   "/appointments": "Appointments",
   "/sessions":     "Sessions",
   "/billing":      "Billing",
@@ -19,7 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 interface HeaderProps {
   onMenuClick: () => void;
-  doctor?: { name: string; clinicName: string; email: string };
+  doctor?: { name: string; clinicName: string; email: string; logoUrl?: string };
 }
 
 export default function Header({ onMenuClick, doctor }: HeaderProps) {
@@ -32,7 +32,7 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
   const pageTitle = Object.entries(PAGE_TITLES).find(([path]) =>
     pathname === path ||
     (path !== "/dashboard" && pathname.startsWith(path))
-  )?.[1] || "PhysioDesk";
+  )?.[1] || "PhysioDesk Core";
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -60,115 +60,122 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
     : "DR";
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 
+    <header className="h-20 bg-white/70 backdrop-blur-md border-b border-gray-100/50 
                        flex items-center justify-between 
-                       px-4 sm:px-6 shrink-0 sticky top-0 z-30">
+                       px-6 sm:px-10 shrink-0 sticky top-0 z-40">
 
       {/* Left — Hamburger + Title */}
-      <div className="flex items-center gap-3">
-        {/* Hamburger — visible on mobile only */}
+      <div className="flex items-center gap-6">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 text-gray-500 hover:text-gray-700 
-                     hover:bg-gray-100 rounded-lg transition"
+          className="lg:hidden p-2.5 text-gray-500 hover:text-gray-900 
+                     bg-gray-100/50 rounded-xl transition-all"
           aria-label="Open menu"
         >
-          <Menu size={20} />
+          <MenuIcon size={20} />
         </button>
 
-        <div>
-          <h1 className="text-base sm:text-lg font-bold text-gray-900 
-                         leading-tight">
-            {pageTitle}
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-black text-gray-900 tracking-tight italic">
+            {pageTitle}<span className="text-blue-600">.</span>
           </h1>
           {doctor?.clinicName && (
-            <p className="text-xs text-gray-400 leading-tight hidden sm:block">
-              {doctor.clinicName}
-            </p>
+            <div className="flex items-center gap-2">
+               <div className="w-1 h-1 rounded-full bg-blue-500" />
+               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">
+                 {doctor.clinicName}
+               </p>
+            </div>
           )}
         </div>
       </div>
 
       {/* Right — Actions */}
-      <div className="flex items-center gap-1 sm:gap-2">
-
-        {/* Notifications */}
+      <div className="flex items-center gap-4">
+        
+        {/* Global Notifications Bridge */}
         <button
-          className="relative p-2 text-gray-500 hover:text-gray-700 
-                     hover:bg-gray-100 rounded-lg transition"
+          className="group relative p-3 text-gray-400 hover:text-gray-900 
+                     bg-gray-50/50 hover:bg-gray-100 rounded-2xl transition-all duration-300"
         >
-          <Bell size={18} />
-          {/* Notification dot */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 
-                           bg-red-500 rounded-full" />
+          <BellIcon size={18} className="group-hover:rotate-12 transition-transform" />
+          <span className="absolute top-2.5 right-2.5 w-2 h-2 
+                           bg-blue-600 rounded-full ring-2 ring-white animate-pulse" />
         </button>
 
-        {/* Profile Dropdown */}
+        {/* User Profile Matrix */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 
-                       hover:bg-gray-100 rounded-xl transition"
+            className={`flex items-center gap-3 pl-2 pr-4 py-1.5 
+                       rounded-2xl transition-all duration-300 border-2
+                       ${dropdownOpen ? 'bg-gray-900 border-gray-900 text-white' : 'hover:bg-gray-50 border-transparent text-gray-900'}`}
           >
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-blue-600 
-                            text-white flex items-center justify-center 
-                            text-xs font-bold shrink-0">
-              {initials}
+            <div className={`w-9 h-9 rounded-[0.8rem] flex items-center justify-center text-xs font-black shadow-lg transition-transform duration-500 overflow-hidden
+              ${dropdownOpen ? 'bg-white text-gray-900 scale-90' : 'bg-gray-900 text-white'}`}>
+              {doctor?.logoUrl ? (
+                <img src={doctor.logoUrl} className="w-full h-full object-cover" alt="Logo" />
+              ) : initials}
             </div>
-            {/* Name — hidden on small screens */}
+
             <div className="hidden sm:block text-left">
-              <p className="text-xs font-semibold text-gray-800 
-                            leading-tight max-w-[120px] truncate">
-                {doctor?.name || "Doctor"}
+              <p className={`text-xs font-black tracking-tight leading-none italic ${dropdownOpen ? 'text-white' : 'text-gray-900'}`}>
+                {doctor?.name || "Provider"}
               </p>
-              <p className="text-xs text-gray-400 leading-tight">
-                Physiotherapist
-              </p>
+              {/* <p className={`text-[9px] font-bold uppercase tracking-tighter mt-1 ${dropdownOpen ? 'text-gray-400' : 'text-gray-400'}`}>
+                Lead Clinical Officer
+              </p> */}
             </div>
-            <ChevronDown
-              size={14}
-              className={`text-gray-400 transition-transform hidden sm:block
-                          ${dropdownOpen ? "rotate-180" : ""}`}
+            
+            <ChevronDownIcon
+              size={12}
+              className={`transition-transform duration-300 hidden sm:block
+                          ${dropdownOpen ? "rotate-180 text-white" : "text-gray-300"}`}
             />
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Expanded Dropdown Panel */}
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-52 bg-white 
-                            border border-gray-100 rounded-xl shadow-lg 
-                            shadow-black/5 py-1.5 z-50">
-
-              {/* Doctor info */}
-              <div className="px-4 py-2.5 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-800 truncate">
-                  {doctor?.name}
-                </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {doctor?.email}
-                </p>
+            <div className="absolute right-0 top-[calc(100%+12px)] w-64 bg-white/90 backdrop-blur-xl
+                            border border-gray-100 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] 
+                            py-3 p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+              
+              <div className="px-5 py-4 mb-2 bg-gray-50 rounded-[1.5rem] border border-gray-100">
+                <div className="flex items-center gap-3">
+                   <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">
+                      {initials}
+                   </div>
+                   <div className="overflow-hidden">
+                      <p className="text-[11px] font-black text-gray-900 truncate tracking-tight">{doctor?.name}</p>
+                      <p className="text-[9px] font-bold text-gray-400 truncate tracking-tight">{doctor?.email}</p>
+                   </div>
+                </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  router.push("/settings");
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 
-                           text-sm text-gray-700 hover:bg-gray-50 transition"
-              >
-                <Settings size={15} className="text-gray-400" />
-                Settings
-              </button>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    router.push("/settings");
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 
+                             text-[11px] font-black uppercase tracking-widest text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                >
+                  <SettingsIcon size={14} className="text-blue-500" />
+                  Settings
+                </button>
 
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 
-                           text-sm text-red-600 hover:bg-red-50 transition"
-              >
-                <LogOut size={15} className="text-red-500" />
-                Sign Out
-              </button>
+                <div className="h-px bg-gray-100 my-2 mx-4" />
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 
+                             text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  <LogOutIcon size={14} />
+                  Logout
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -4,18 +4,19 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutDashboard, Users, CalendarDays, ClipboardList,
-  CreditCard, BarChart2, Settings, X, Stethoscope,
-  ChevronRight,
+  CreditCard, BarChart2, Settings, X, Activity,
+  ChevronRight, LogOut, Sparkles
 } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/clients",      label: "Clients",      icon: Users },
-  { href: "/appointments", label: "Appointments", icon: CalendarDays },
-  { href: "/sessions",     label: "Sessions",     icon: ClipboardList },
-  { href: "/billing",      label: "Billing",      icon: CreditCard },
-  { href: "/reports",      label: "Reports",      icon: BarChart2 },
-  { href: "/settings",     label: "Settings",     icon: Settings },
+  { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard, color: "text-blue-500" },
+  { href: "/clients",      label: "Patients",      icon: Users, color: "text-purple-500" },
+  { href: "/appointments", label: "Appointments",      icon: CalendarDays, color: "text-emerald-500" },
+  { href: "/sessions",     label: "Sessions",     icon: ClipboardList, color: "text-indigo-500" },
+  { href: "/billing",      label: "Billing",      icon: CreditCard, color: "text-orange-500" },
+  { href: "/reports",      label: "Reports",      icon: BarChart2, color: "text-pink-500" },
+  { href: "/settings",     label: "Settings",     icon: Settings, color: "text-slate-500" },
 ];
 
 interface SidebarProps {
@@ -25,6 +26,8 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   // Close sidebar on route change (mobile)
   useEffect(() => { onClose(); }, [pathname]);
@@ -38,56 +41,73 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const handleLogout = () => {
+    clearAuth();
+    router.push("/login");
+  };
+
   return (
     <>
       {/* ── Mobile Backdrop ───────────────────────────── */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm 
-                     lg:hidden"
+          className="fixed inset-0 z-40 bg-gray-900/20 backdrop-blur-md 
+                     lg:hidden transition-opacity duration-300"
           onClick={onClose}
         />
       )}
 
       {/* ── Sidebar Panel ─────────────────────────────── */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white 
+        className={`fixed top-0 left-0 z-50 h-full w-72 bg-white/80 backdrop-blur-2xl
                     border-r border-gray-100 flex flex-col
-                    transform transition-transform duration-300 ease-in-out
+                    transform transition-all duration-500 ease-in-out
                     lg:translate-x-0 lg:static lg:z-auto
-                    ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+                    ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full shadow-none"}`}
       >
-        {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-5 
-                        border-b border-gray-100 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center 
-                            justify-center shrink-0">
-              <Stethoscope size={18} className="text-white" />
+        {/* Logo Section */}
+        <div className="flex items-center justify-between px-7 py-8 shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-3.5 group">
+            <div className="w-11 h-11 bg-gray-900 rounded-2xl flex items-center 
+                            justify-center shrink-0 shadow-2xl shadow-gray-200 
+                            group-hover:rotate-12 transition-transform duration-500">
+              <Activity size={22} className="text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900 leading-tight">
-                PhysioDesk
+              <p className="text-lg font-black text-gray-900 tracking-tighter leading-none italic">
+                Physio<span className="text-blue-600">Desk</span>
               </p>
-              <p className="text-xs text-gray-400 leading-tight">
+              <p className="text-[10px] font-black text-gray-400 mt-1 uppercase tracking-[0.2em] leading-none">
                 Clinic Management
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Close button — mobile only */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 text-gray-400 hover:text-gray-600 
-                       hover:bg-gray-100 rounded-lg transition"
+            className="lg:hidden p-2 text-gray-400 hover:text-gray-900 
+                       bg-gray-50 rounded-xl transition-all"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        {/* Nav Items */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {/* Global Search Mockup or Status */}
+        <div className="px-6 mb-6">
+           <div className="relative group">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                 <Sparkles size={14} className="text-blue-500 animate-pulse" />
+              </div>
+              <div className="w-full bg-gray-50/50 border border-gray-100 py-2.5 pl-9 pr-4 rounded-xl text-[11px] font-black tracking-widest text-gray-400 uppercase italic cursor-default hover:bg-gray-100 transition-colors">
+                 Online
+              </div>
+           </div>
+        </div>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
+          {NAV_ITEMS.map(({ href, label, icon: Icon, color }) => {
             const isActive = pathname === href ||
               (href !== "/dashboard" && pathname.startsWith(href));
 
@@ -95,35 +115,48 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl 
-                            text-sm font-medium transition-all group
+                className={`flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] 
+                            text-sm transition-all duration-300 relative group
                             ${isActive
-                              ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
-                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                              ? "bg-gray-900 text-white shadow-xl shadow-gray-200 translate-x-1"
+                              : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                             }`}
               >
                 <Icon
-                  size={18}
-                  className={`shrink-0 transition
-                    ${isActive
-                      ? "text-white"
-                      : "text-gray-400 group-hover:text-gray-600"
-                    }`}
+                  size={20}
+                  className={`shrink-0 transition-transform duration-500
+                    ${isActive ? "text-white scale-110" : `${color} opacity-70 group-hover:opacity-100 group-hover:scale-110`}
+                  `}
                 />
-                <span className="flex-1">{label}</span>
+                <span className={`flex-1 font-black italic tracking-tight transition-all duration-300 ${isActive ? 'translate-x-1' : ''}`}>
+                  {label}
+                </span>
                 {isActive && (
-                  <ChevronRight size={14} className="text-blue-200" />
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                )}
+                {!isActive && (
+                   <ChevronRight size={14} className="text-gray-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom — version */}
-        <div className="px-5 py-4 border-t border-gray-100 shrink-0">
-          <p className="text-xs text-gray-400 text-center">
-            PhysioDesk v1.0.0
-          </p>
+        {/* Bottom Section */}
+        <div className="p-6 mt-auto">
+          <div className="bg-blue-50/50 rounded-3xl p-5 border border-blue-100 mb-6 relative overflow-hidden group">
+             <div className="absolute -right-4 -top-4 w-12 h-12 bg-blue-100 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 italic">Support</p>
+             <p className="text-xs text-gray-600 font-bold leading-relaxed">Ready to help you with your daily clinic tasks and needs.</p>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-white border border-gray-100 text-red-500 hover:bg-red-50 hover:border-red-100 transition-all font-black text-xs uppercase tracking-[0.2em]"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
       </aside>
     </>

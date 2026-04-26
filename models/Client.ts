@@ -1,7 +1,9 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { PracticeType } from "@/lib/constants";
 
 export type Gender = "MALE" | "FEMALE" | "OTHER";
 export type BodySide = "LEFT" | "RIGHT" | "BOTH";
+/** @deprecated Use PracticeType instead */
 export type TherapyType = "PHYSIOTHERAPY" | "ACUPRESSURE" | "COMBINED";
 export type ClientType = "NEW" | "REGULAR" | "ONE_TIME";
 export type ClientStatus = "ACTIVE" | "INACTIVE" | "DISCHARGED";
@@ -20,13 +22,23 @@ export interface IClient extends Document {
   photoUrl?: string;
   referralSource?: string;
 
-  // Medical
+  // Medical / Service Related
   chiefComplaint: string;
-  bodyPart: string;
-  bodySide: BodySide;
+  
+  // Body-specific (optional - not all practices track this)
+  bodyPart?: string;
+  bodySide?: BodySide;
+  
   medicalHistory?: string;
   diagnosis?: string;
-  therapyType: TherapyType;
+  
+  // Practice types (multi-select supported)
+  practiceTypes: PracticeType[];
+  
+  // Backward compatibility
+  /** @deprecated Use practiceType instead */
+  therapyType?: TherapyType;
+
   clientType: ClientType;
   status: ClientStatus;
 
@@ -34,6 +46,11 @@ export interface IClient extends Document {
   totalSessionsPlanned?: number;
   sessionFee: number;
   reminderEnabled: boolean;
+
+  // Insurance (for future use)
+  insuranceProvider?: string;
+  insuranceId?: string;
+  insuranceActivation?: Date;
 
   createdAt: Date;
   updatedAt: Date;
@@ -54,26 +71,44 @@ const ClientSchema = new Schema<IClient>(
     referralSource:  { type: String },
 
     chiefComplaint:  { type: String, required: true },
-    bodyPart:        { type: String, required: true },
+    bodyPart:        { type: String },
     bodySide:        { type: String, enum: ["LEFT", "RIGHT", "BOTH"], default: "BOTH" },
     medicalHistory:  { type: String },
     diagnosis:       { type: String },
-    therapyType:     { type: String, enum: ["PHYSIOTHERAPY", "ACUPRESSURE", "COMBINED"], required: true },
+    
+    // Generic practice types (multi-select)
+    practiceTypes:    { type: [String], default: [] },
+    
+    // Backward compatibility
+    practiceType:    { type: String },
+    therapyType:     { type: String, enum: ["PHYSIOTHERAPY", "ACUPRESSURE", "COMBINED"] },
+    
     clientType:      { type: String, enum: ["NEW", "REGULAR", "ONE_TIME"], default: "NEW" },
     status:          { type: String, enum: ["ACTIVE", "INACTIVE", "DISCHARGED"], default: "ACTIVE" },
 
     totalSessionsPlanned: { type: Number },
     sessionFee:           { type: Number, default: 0 },
     reminderEnabled:      { type: Boolean, default: true },
+
+    // Insurance info
+    insuranceProvider:    { type: String },
+    insuranceId:          { type: String },
+    insuranceActivation:  { type: Date },
   },
   { timestamps: true }
 );
 
-// Index for fast doctor-based queries
+// Indexes for high performance
 ClientSchema.index({ doctorId: 1, status: 1 });
+ClientSchema.index({ doctorId: 1, createdAt: -1 });
+ClientSchema.index({ name: 1, doctorId: 1 });
+ClientSchema.index({ phone: 1, doctorId: 1 });
 ClientSchema.index({ doctorId: 1, name: "text", phone: "text" });
 
-const Client: Model<IClient> =
-  mongoose.models.Client || mongoose.model<IClient>("Client", ClientSchema);
+// Force schema refresh — delete cached model so practiceTypes field is recognized
+if (mongoose.models.Client) {
+  delete mongoose.models.Client;
+}
+const Client: Model<IClient> = mongoose.model<IClient>("Client", ClientSchema);
 
 export default Client;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { getAuthDoctor } from "@/lib/auth";
 import Client from "@/models/Client";
+import { createInitialBillingForClient } from "@/lib/billingUtils";
 
 // GET — List all clients with search, filter, pagination
 export async function GET(req: NextRequest) {
@@ -41,7 +42,13 @@ export async function GET(req: NextRequest) {
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
-        .lean(),
+        .lean()
+        .then(docs => docs.map((c: any) => ({
+          ...c,
+          practiceTypes: (c.practiceTypes && c.practiceTypes.length > 0)
+            ? c.practiceTypes
+            : (c.practiceType ? [c.practiceType] : (c.therapyType ? [c.therapyType] : []))
+        }))),
       Client.countDocuments(filter),
     ]);
 
@@ -73,16 +80,29 @@ export async function POST(req: NextRequest) {
       emergencyContact, referralSource,
       chiefComplaint, bodyPart, bodySide,
       medicalHistory, diagnosis,
-      therapyType, clientType,
+      therapyType, practiceType, practiceTypes, clientType,
       totalSessionsPlanned, sessionFee,
       reminderEnabled,
     } = body;
 
+    let finalPracticeTypes: string[] = [];
+    if (Array.isArray(practiceTypes)) {
+      finalPracticeTypes = practiceTypes;
+    } else if (practiceTypes) {
+      finalPracticeTypes = [practiceTypes];
+    } else if (practiceType) {
+      finalPracticeTypes = [practiceType];
+    } else if (therapyType) {
+      finalPracticeTypes = [therapyType];
+    }
+
+    console.log("[POST /clients] body.practiceTypes:", JSON.stringify(practiceTypes), "| finalPracticeTypes:", JSON.stringify(finalPracticeTypes));
+
     // Validate required fields
     if (!name || !age || !gender || !phone || !chiefComplaint ||
-        !bodyPart || !therapyType) {
+        finalPracticeTypes.length === 0) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Please select at least one service category" },
         { status: 400 }
       );
     }
@@ -94,11 +114,14 @@ export async function POST(req: NextRequest) {
       address:          address || undefined,
       emergencyContact: emergencyContact || undefined,
       referralSource:   referralSource || undefined,
-      chiefComplaint, bodyPart,
+      chiefComplaint, bodyPart: bodyPart || undefined,
       bodySide:         bodySide || "BOTH",
       medicalHistory:   medicalHistory || undefined,
       diagnosis:        diagnosis || undefined,
-      therapyType,
+      practiceTypes:    finalPracticeTypes,
+      // DEBUG: log what we're saving
+      practiceType:     finalPracticeTypes[0],
+      therapyType:      therapyType || undefined,
       clientType:       clientType || "NEW",
       totalSessionsPlanned: totalSessionsPlanned
         ? Number(totalSessionsPlanned) : undefined,
@@ -106,8 +129,28 @@ export async function POST(req: NextRequest) {
       reminderEnabled:  reminderEnabled !== false,
     });
 
+    // Auto-create initial billing entry
+    let billingCreated = false;
+    if (sessionFee && Number(sessionFee) > 0) {
+      try {
+        await createInitialBillingForClient(
+          doctorId,
+          client._id,
+          Number(sessionFee)
+        );
+        billingCreated = true;
+      } catch (billingError) {
+        console.error("Auto-billing creation failed:", billingError);
+        // Don't fail the client creation if billing fails
+      }
+    }
+
     return NextResponse.json(
-      { message: "Client created successfully", client },
+      {
+        message: "Client created successfully",
+        client,
+        billingCreated,
+      },
       { status: 201 }
     );
   } catch (error) {

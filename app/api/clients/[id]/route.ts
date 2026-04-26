@@ -77,7 +77,12 @@ export async function GET(
     ]);
 
     return NextResponse.json({
-      client,
+      client: {
+        ...client,
+        practiceTypes: (client.practiceTypes && client.practiceTypes.length > 0)
+          ? client.practiceTypes
+          : (client.practiceType ? [client.practiceType] : (client.therapyType ? [client.therapyType] : []))
+      },
       summary: {
         sessionsCompleted,
         lastVisit:       lastSession?.createdAt    || null,
@@ -106,9 +111,22 @@ export async function PUT(
     const { id }   = await params;
     const body     = await req.json();
 
+    console.log("[PUT /clients] body.practiceTypes:", JSON.stringify(body.practiceTypes));
+
+    const updateData = { ...body };
+    
+    // Normalize practiceTypes to array for safety
+    if (body.practiceTypes) {
+      const types = Array.isArray(body.practiceTypes) ? body.practiceTypes : [body.practiceTypes];
+      updateData.practiceTypes = types;
+      if (types.length > 0) {
+        updateData.practiceType = types[0];
+      }
+    }
+
     const client = await Client.findOneAndUpdate(
       { _id: id, doctorId },
-      { $set: body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 

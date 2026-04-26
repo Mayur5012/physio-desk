@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
-    const { email, password } = await req.json();
+    const { email, password, keepActive } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure:   process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge:   60 * 60 * 24,  // 24 hours
+      maxAge:   keepActive ? 60 * 60 * 24 * 30 : 60 * 60 * 24,  // 30 days or 24 hours
       path:     "/",
     });
 
