@@ -32,7 +32,7 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
   const pageTitle = Object.entries(PAGE_TITLES).find(([path]) =>
     pathname === path ||
     (path !== "/dashboard" && pathname.startsWith(path))
-  )?.[1] || "PhysioDesk Core";
+  )?.[1] || "Clindesk Core";
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -107,30 +107,16 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className={`flex items-center gap-3 pl-2 pr-4 py-1.5 
-                       rounded-2xl transition-all duration-300 border-2
-                       ${dropdownOpen ? 'bg-gray-900 border-gray-900 text-white' : 'hover:bg-gray-50 border-transparent text-gray-900'}`}
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
           >
-            <div className={`w-9 h-9 rounded-[0.8rem] flex items-center justify-center text-xs font-black shadow-lg transition-transform duration-500 overflow-hidden
-              ${dropdownOpen ? 'bg-white text-gray-900 scale-90' : 'bg-gray-900 text-white'}`}>
-              {doctor?.logoUrl ? (
-                <img src={doctor.logoUrl} className="w-full h-full object-cover" alt="Logo" />
-              ) : initials}
-            </div>
-
-            <div className="hidden sm:block text-left">
-              <p className={`text-xs font-black tracking-tight leading-none italic ${dropdownOpen ? 'text-white' : 'text-gray-900'}`}>
-                {doctor?.name || "Provider"}
-              </p>
-              {/* <p className={`text-[9px] font-bold uppercase tracking-tighter mt-1 ${dropdownOpen ? 'text-gray-400' : 'text-gray-400'}`}>
-                Lead Clinical Officer
-              </p> */}
-            </div>
+            <p className="text-sm font-black tracking-tight italic">
+              {doctor?.name || "Provider"}
+            </p>
             
             <ChevronDownIcon
-              size={12}
-              className={`transition-transform duration-300 hidden sm:block
-                          ${dropdownOpen ? "rotate-180 text-white" : "text-gray-300"}`}
+              size={14}
+              className={`transition-transform duration-300 text-gray-400
+                          ${dropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 

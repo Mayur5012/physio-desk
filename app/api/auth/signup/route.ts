@@ -13,15 +13,17 @@ export async function POST(req: NextRequest) {
             email,
             password,
             clinicName,
+            phoneCode,
             phone,
+            fullPhone,
             specialization,
             address,
         } = body;
 
         // ── Validate required fields ───────────────────────────
-        if (!name || !email || !password || !clinicName) {
+        if (!name || !email || !password || !clinicName || !phone) {
             return NextResponse.json(
-                { error: "Name, email, password and clinic name are required" },
+                { error: "Name, email, password, clinic name, and phone are required" },
                 { status: 400 }
             );
         }
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
             email: email.toLowerCase().trim(),
             passwordHash: hashedPassword,
             clinicName: clinicName.trim(),
+            phoneCode: phoneCode || "IN",
             phone: phone?.trim() || undefined,
             specialization: specialization?.trim() || undefined,
             address: address?.trim() || undefined,
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
                     name: doctor.name,
                     email: doctor.email,
                     clinicName: doctor.clinicName,
+                    phoneCode: doctor.phoneCode,
                     phone: doctor.phone,
                     specialization: doctor.specialization,
                 },

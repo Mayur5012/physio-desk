@@ -11,15 +11,35 @@ import Toast, { useToast } from "@/components/ui/Toast";
 import { ArrowLeft, Save } from "lucide-react";
 import { format } from "date-fns";
 
-const schema = z.object({
-  clientId:    z.string().min(1, "Select a client"),
-  totalFee:    z.coerce.number().min(1, "Fee must be greater than 0"),
-  amountPaid:  z.coerce.number().min(0),
-  paymentMode: z.enum(["CASH", "UPI", "CARD"]),
-  date:        z.string().min(1, "Date required"),
-  notes:       z.string().optional(),
-  sessionId:   z.string().optional(),
-});
+const schema = z
+  .object({
+    clientId: z
+      .string()
+      .min(1, "Please select a client"),
+    totalFee: z
+      .coerce
+      .number()
+      .min(0, "Total fee must be at least 0")
+      .max(1000000, "Total fee cannot exceed 10,00,000"),
+    amountPaid: z
+      .coerce
+      .number()
+      .min(0, "Amount paid must be at least 0")
+      .max(1000000, "Amount paid cannot exceed 10,00,000"),
+    paymentMode: z.enum(["CASH", "UPI", "CARD"]),
+    date: z
+      .string()
+      .min(1, "Date is required"),
+    notes: z
+      .string()
+      .max(300, "Notes must be under 300 characters")
+      .optional(),
+    sessionId: z.string().optional(),
+  })
+  .refine((d) => d.amountPaid <= d.totalFee, {
+    message: "Amount paid cannot exceed total fee",
+    path: ["amountPaid"],
+  });
 
 type FormData = z.infer<typeof schema>;
 

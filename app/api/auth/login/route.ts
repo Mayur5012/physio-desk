@@ -46,6 +46,12 @@ export async function POST(req: NextRequest) {
       clinicName: doctor.clinicName,
     });
 
+    // Update lastLogin
+    await Doctor.updateOne(
+      { _id: doctor._id },
+      { lastLogin: new Date() }
+    );
+
     // Build response and set cookie
     const response = NextResponse.json({
       message: "Login successful",

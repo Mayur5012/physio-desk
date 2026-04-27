@@ -18,9 +18,16 @@ export interface IDoctor extends Document {
   clinicName: string;
   email: string;
   phone: string;
+  phoneCode?: string;
   passwordHash: string;
   address?: string;
   logoUrl?: string;
+
+  // Password reset
+  resetOTP?: string;
+  resetOTPExpiry?: Date;
+  resetToken?: string;
+  lastLogin?: Date;
 
   // Practice specializations (can have multiple)
   specializations: PracticeType[];
@@ -75,9 +82,16 @@ const DoctorSchema = new Schema<IDoctor>(
     clinicName:     { type: String, required: true },
     email:          { type: String, required: true, unique: true, lowercase: true },
     phone:          { type: String, required: true },
+    phoneCode:      { type: String, default: "IN" },
     passwordHash:   { type: String, required: true },
     address:        { type: String },
     logoUrl:        { type: String },
+
+    // Password reset
+    resetOTP:       { type: String },
+    resetOTPExpiry: { type: Date },
+    resetToken:     { type: String },
+    lastLogin:      { type: Date },
 
     // Specializations
     specializations: [{ type: String }],

@@ -11,7 +11,9 @@ import Select from "@/components/ui/Select";
 import Toast, { useToast } from "@/components/ui/Toast";
 import {
   ArrowLeft, Save, Minus, Plus, Users, Sparkles, Activity, ClipboardList,
-} from "lucide-react";import { format } from "date-fns";
+} from "lucide-react";
+import { format } from "date-fns";
+import { SessionGuard } from "@/components/PrerequisiteGuard";
 
 const TECHNIQUES = [
   "Manual Therapy", "Dry Needling", "Ultrasound",
@@ -22,17 +24,49 @@ const TECHNIQUES = [
 ];
 
 const schema = z.object({
-  clientId:       z.string().min(1, "Select a client"),
-  sessionNumber:  z.coerce.number().min(1),
-  date:           z.string().min(1, "Date required"),
-  durationMins:   z.coerce.number().min(15),
-  chiefComplaint: z.string().optional(),
-  subjective:     z.string().optional(),
-  objective:      z.string().optional(),
-  assessment:     z.string().optional(),
-  plan:           z.string().optional(),
-  exercises:      z.string().optional(),
-  notes:          z.string().optional(),
+  clientId: z
+    .string()
+    .min(1, "Please select a client"),
+  sessionNumber: z
+    .coerce
+    .number()
+    .min(1, "Session number must be at least 1"),
+  date: z
+    .string()
+    .min(1, "Date is required"),
+  durationMins: z
+    .coerce
+    .number()
+    .min(15, "Duration must be at least 15 minutes")
+    .max(480, "Duration cannot exceed 8 hours"),
+  chiefComplaint: z
+    .string()
+    .max(200, "Chief complaint must be under 200 characters")
+    .optional(),
+  subjective: z
+    .string()
+    .max(500, "Subjective notes must be under 500 characters")
+    .optional(),
+  objective: z
+    .string()
+    .max(500, "Objective findings must be under 500 characters")
+    .optional(),
+  assessment: z
+    .string()
+    .max(500, "Assessment must be under 500 characters")
+    .optional(),
+  plan: z
+    .string()
+    .max(500, "Plan must be under 500 characters")
+    .optional(),
+  exercises: z
+    .string()
+    .max(500, "Exercises must be under 500 characters")
+    .optional(),
+  notes: z
+    .string()
+    .max(300, "Notes must be under 300 characters")
+    .optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -392,13 +426,15 @@ function NewSessionForm() {
 // ── Page export with Suspense wrapper ──────────────────────
 export default function NewSessionPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
-                        rounded-full animate-spin" />
-      </div>
-    }>
-      <NewSessionForm />
-    </Suspense>
+    <SessionGuard>
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
+                          rounded-full animate-spin" />
+        </div>
+      }>
+        <NewSessionForm />
+      </Suspense>
+    </SessionGuard>
   );
 }

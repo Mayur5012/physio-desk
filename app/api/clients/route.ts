@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const {
-      name, age, gender, phone, email, address,
+      name, age, gender, phoneCode, phone, email, address,
       emergencyContact, referralSource,
       chiefComplaint, bodyPart, bodySide,
       medicalHistory, diagnosis,
@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
       name,
       age: Number(age),
       gender,
+      phoneCode: phoneCode || "IN",
       phone,
       email: email || undefined,
       address: address || undefined,

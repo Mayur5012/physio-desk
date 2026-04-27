@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import api from "@/lib/api";
@@ -9,33 +9,77 @@ import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Toast, { useToast } from "@/components/ui/Toast";
+import PhoneInput from "@/components/ui/PhoneInput";
 import {
   ArrowLeft, Save, User, Activity, HeartPulse, Sparkles, Command,
   ClipboardCheck, Clock, Zap, Target, Brain, Heart, Landmark,
   Leaf, Microscope, MessageSquare, Check
 } from "lucide-react";
 import { PRACTICE_TYPES, PRACTICE_CATEGORIES, PRACTICE_TYPE_CONFIG } from "@/lib/constants";
+import { validatePhoneForCountry, getCountryByCode, cleanPhoneNumber, formatPhoneWithCountry } from "@/lib/phoneValidation";
 
-const schema = z.object({
-  name:             z.string().min(2, "Full Name is required"),
-  age:              z.coerce.number().min(1).max(120),
-  gender:           z.enum(["MALE", "FEMALE", "OTHER"]),
-  phone:            z.string().min(10, "Valid phone number required"),
-  email:            z.string().email().optional().or(z.literal("")),
-  address:          z.string().optional(),
-  emergencyContact: z.string().optional(),
-  referralSource:   z.string().optional(),
-  chiefComplaint:   z.string().min(3, "Please describe the problem"),
-  bodyPart:         z.string().min(1, "Specify the body part"),
-  bodySide:         z.enum(["LEFT", "RIGHT", "BOTH"]),
-  medicalHistory:   z.string().optional(),
-  diagnosis:        z.string().optional(),
-  practiceTypes:    z.array(z.string()).min(1, "Select at least one service type"),
-  clientType:       z.enum(["NEW", "REGULAR", "ONE_TIME"]),
-  totalSessionsPlanned: z.coerce.number().optional(),
-  sessionFee:           z.coerce.number().min(0).optional(),
-  reminderEnabled:      z.boolean().optional(),
-});
+const schema = z
+  .object({
+    name: z
+      .string()
+      .min(2, "Full Name is required")
+      .max(60, "Name must be under 60 characters")
+      .regex(/^[a-zA-Z\s.'-]+$/, "Name can only contain letters, spaces, dots, hyphens, apostrophes"),
+    age: z
+      .coerce
+      .number()
+      .min(1, "Age must be at least 1")
+      .max(120, "Age must be 120 or less"),
+    gender: z.enum(["MALE", "FEMALE", "OTHER"]),
+    phoneCode: z.string().min(1, "Select country code"),
+    phone: z.string().min(1, "Phone number is required"),
+    email: z
+      .string()
+      .email("Enter a valid email")
+      .max(100, "Email must be under 100 characters")
+      .optional()
+      .or(z.literal("")),
+    address: z
+      .string()
+      .max(200, "Address must be under 200 characters")
+      .optional(),
+    emergencyContact: z
+      .string()
+      .max(100, "Emergency contact must be under 100 characters")
+      .optional(),
+    referralSource: z.string().optional(),
+    chiefComplaint: z
+      .string()
+      .min(3, "Please describe the problem")
+      .max(200, "Chief complaint must be under 200 characters"),
+    bodyPart: z
+      .string()
+      .min(1, "Specify the body part")
+      .max(100, "Body part must be under 100 characters"),
+    bodySide: z.enum(["LEFT", "RIGHT", "BOTH"]),
+    medicalHistory: z
+      .string()
+      .max(500, "Medical history must be under 500 characters")
+      .optional(),
+    diagnosis: z
+      .string()
+      .max(300, "Diagnosis must be under 300 characters")
+      .optional(),
+    practiceTypes: z.array(z.string()).min(1, "Select at least one service type"),
+    clientType: z.enum(["NEW", "REGULAR", "ONE_TIME"]),
+    totalSessionsPlanned: z.coerce.number().min(0).optional(),
+    sessionFee: z.coerce.number().min(0).optional(),
+    reminderEnabled: z.boolean().optional(),
+  })
+  .refine((d) => {
+    const country = getCountryByCode(d.phoneCode);
+    if (!country) return false;
+    const cleanedPhone = cleanPhoneNumber(d.phone);
+    return validatePhoneForCountry(cleanedPhone, country);
+  }, {
+    message: "Invalid phone number for the selected country",
+    path: ["phone"],
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -65,6 +109,7 @@ export default function NewClientPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -77,6 +122,7 @@ export default function NewClientPage() {
       practiceTypes: [PRACTICE_TYPES.PHYSIOTHERAPY],
       clientType:  "NEW",
       reminderEnabled: true,
+      phoneCode:   "IN",
     },
   });
 
@@ -96,7 +142,13 @@ export default function NewClientPage() {
     console.log("[NewClient] Submitting practiceTypes:", JSON.stringify(data.practiceTypes));
     setLoading(true);
     try {
-      await api.post("/clients", data);
+      const country = getCountryByCode(data.phoneCode);
+      const formattedPhone = formatPhoneWithCountry(data.phone, country!);
+      
+      await api.post("/clients", {
+        ...data,
+        fullPhone: formattedPhone,
+      });
       showToast("Patient record saved successfully", "success");
       setTimeout(() => router.push("/clients"), 1200);
     } catch (err: any) {
@@ -150,7 +202,26 @@ export default function NewClientPage() {
                 ))}
               </div>
             </div>
-            <Input {...register("phone")} label="Phone Number" required type="tel" placeholder="9876543210" className={INPUT_STYLE} error={errors.phone?.message} />
+            <Controller
+              name="phoneCode"
+              control={control}
+              render={({ field }) => (
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field: phoneField }) => (
+                    <PhoneInput
+                      phoneCode={field.value}
+                      phone={phoneField.value}
+                      onPhoneCodeChange={field.onChange}
+                      onPhoneChange={phoneField.onChange}
+                      error={errors.phone?.message}
+                      placeholder="1234567890"
+                    />
+                  )}
+                />
+              )}
+            />
             <Input {...register("email")} label="Email Address" type="email" placeholder="john@email.com" className={INPUT_STYLE} error={errors.email?.message} />
             <div className="sm:col-span-2">
               <Input {...register("address")} label="Address" placeholder="Full address" className={INPUT_STYLE} />

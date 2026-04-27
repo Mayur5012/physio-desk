@@ -11,18 +11,42 @@ import Select from "@/components/ui/Select";
 import Toast, { useToast } from "@/components/ui/Toast";
 import { ArrowLeft, Save, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { AppointmentGuard } from "@/components/PrerequisiteGuard";
 
 const schema = z.object({
-  clientId:          z.string().min(1, "Select a client"),
-  date:              z.string().min(1, "Date required"),
-  startTime:         z.string().min(1, "Time required"),
-  durationMins:      z.coerce.number().min(30),
-  type:              z.enum(["NEW_CONSULTATION","FOLLOWUP","ONE_TIME"]),
-  notes:             z.string().optional(),
-  isRecurring:       z.boolean().optional(),
-  recurrencePattern: z.enum(["DAILY","EVERY_N_DAYS","CUSTOM"]).optional(),
-  recurrenceEveryN:  z.coerce.number().optional(),
-  endAfterSessions:  z.coerce.number().optional(),
+  clientId: z
+    .string()
+    .min(1, "Please select a client"),
+  date: z
+    .string()
+    .min(1, "Date is required"),
+  startTime: z
+    .string()
+    .min(1, "Start time is required"),
+  durationMins: z
+    .coerce
+    .number()
+    .min(15, "Duration must be at least 15 minutes")
+    .max(480, "Duration cannot exceed 8 hours"),
+  type: z.enum(["NEW_CONSULTATION", "FOLLOWUP", "ONE_TIME"]),
+  notes: z
+    .string()
+    .max(500, "Notes must be under 500 characters")
+    .optional(),
+  isRecurring: z.boolean().optional(),
+  recurrencePattern: z.enum(["DAILY", "EVERY_N_DAYS", "CUSTOM"]).optional(),
+  recurrenceEveryN: z
+    .coerce
+    .number()
+    .min(1, "Interval must be at least 1")
+    .max(30, "Interval cannot exceed 30 days")
+    .optional(),
+  endAfterSessions: z
+    .coerce
+    .number()
+    .min(1, "Must have at least 1 session")
+    .max(52, "Cannot exceed 52 sessions")
+    .optional(),
   recurrenceEndDate: z.string().optional(),
 });
 
@@ -448,13 +472,15 @@ function NewAppointmentForm() {
 // ── Page export with Suspense wrapper ──────────────────────
 export default function NewAppointmentPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
-                        rounded-full animate-spin" />
-      </div>
-    }>
-      <NewAppointmentForm />
-    </Suspense>
+    <AppointmentGuard>
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent
+                          rounded-full animate-spin" />
+        </div>
+      }>
+        <NewAppointmentForm />
+      </Suspense>
+    </AppointmentGuard>
   );
 }

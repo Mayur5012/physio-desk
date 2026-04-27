@@ -16,6 +16,7 @@ export interface IClient extends Document {
   age: number;
   gender: Gender;
   phone: string;
+  phoneCode?: string;
   email?: string;
   address?: string;
   emergencyContact?: string;
@@ -66,6 +67,7 @@ const ClientSchema = new Schema<IClient>(
     age: { type: Number, required: true },
     gender: { type: String, enum: ["MALE", "FEMALE", "OTHER"], required: true },
     phone: { type: String, required: true },
+    phoneCode: { type: String, default: "IN" },
     email: { type: String, lowercase: true },
     address: { type: String },
     emergencyContact: { type: String },

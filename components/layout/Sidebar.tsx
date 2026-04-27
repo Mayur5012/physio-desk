@@ -68,14 +68,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Logo Section */}
         <div className="flex items-center justify-between px-7 py-8 shrink-0">
           <Link href="/dashboard" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 bg-gray-900 rounded-2xl flex items-center 
+            {/* <div className="w-11 h-11 bg-gray-900 rounded-2xl flex items-center 
                             justify-center shrink-0 shadow-2xl shadow-gray-200 
                             group-hover:rotate-12 transition-transform duration-500">
               <Activity size={22} className="text-white" />
-            </div>
+            </div> */}
             <div>
               <p className="text-lg font-black text-gray-900 tracking-tighter leading-none italic">
-                Physio<span className="text-blue-600">Desk</span>
+                Clin<span className="text-blue-600">Desk</span>
               </p>
               <p className="text-[10px] font-black text-gray-400 mt-1 uppercase tracking-[0.2em] leading-none">
                 Clinic Management
@@ -147,7 +147,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="bg-blue-50/50 rounded-3xl p-5 border border-blue-100 mb-6 relative overflow-hidden group">
              <div className="absolute -right-4 -top-4 w-12 h-12 bg-blue-100 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 italic">Support</p>
-             <p className="text-xs text-gray-600 font-bold leading-relaxed">Ready to help you with your daily clinic tasks and needs.</p>
+             <p className="text-xs text-gray-600 font-bold leading-relaxed">Please contact on support@clindesk.in for any platform related queries.</p>
           </div>
 
           <button

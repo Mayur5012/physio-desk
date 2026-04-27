@@ -11,8 +11,17 @@ import Link from "next/link";
 import Spinner from "@/components/ui/Spinner";
 
 const schema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Minimum 6 characters"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .max(100, "Email must be under 100 characters")
+    .toLowerCase(),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters")
+    .max(72, "Password must be under 72 characters"),
   keepActive: z.boolean().optional(),
 });
 
@@ -63,7 +72,7 @@ export default function LoginPage() {
             </div>
             <div className="text-center">
                <h1 className="text-3xl font-black text-gray-900 tracking-tighter italic">
-                 Physio<span className="text-blue-600">Desk</span>
+                 Clin<span className="text-blue-600">Desk</span>
                </h1>
                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2">Clinic Manager</p>
             </div>
