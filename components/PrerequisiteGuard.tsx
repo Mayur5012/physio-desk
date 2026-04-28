@@ -18,8 +18,9 @@ export function AppointmentGuard({ children }: AppointmentGuardProps) {
     const checkClients = async () => {
       try {
         const response = await api.get("/clients?status=ACTIVE&limit=1");
-        setClientCount(response.data.totalCount || 0);
-        if ((response.data.totalCount || 0) === 0) {
+        const count = response.data.total || 0;
+        setClientCount(count);
+        if (count === 0) {
           setShowModal(true);
         }
       } catch (err) {
@@ -91,8 +92,9 @@ export function SessionGuard({ children }: SessionGuardProps) {
     const checkAppointments = async () => {
       try {
         const response = await api.get("/appointments?limit=1");
-        setAppointmentCount(response.data.totalCount || 0);
-        if ((response.data.totalCount || 0) === 0) {
+        const count = response.data.total || 0;
+        setAppointmentCount(count);
+        if (count === 0) {
           setShowModal(true);
         }
       } catch (err) {
