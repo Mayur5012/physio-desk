@@ -12,11 +12,15 @@ import Toast, { useToast } from "@/components/ui/Toast";
 import { ArrowLeft, Save, AlertTriangle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { AppointmentGuard } from "@/components/PrerequisiteGuard";
+import { PRACTICE_TYPES } from "@/lib/constants";
 
 const schema = z.object({
   clientId: z
     .string()
     .min(1, "Please select a client"),
+  practiceType: z
+    .string()
+    .min(1, "Please select a practice type"),
   date: z
     .string()
     .min(1, "Date is required"),
@@ -85,6 +89,7 @@ function NewAppointmentForm() {
       startTime:         defaultTime,
       durationMins:      60,
       type:              "FOLLOWUP",
+      practiceType:      "PHYSIOTHERAPY",
       isRecurring:       false,
       recurrencePattern: "EVERY_N_DAYS",
       recurrenceEveryN:  2,
@@ -204,6 +209,29 @@ function NewAppointmentForm() {
             {errors.clientId && (
               <p className="text-red-500 text-xs mt-1">
                 {errors.clientId.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Practice Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              {...register("practiceType")}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg
+                         text-sm focus:outline-none focus:ring-2
+                         focus:ring-blue-500 bg-white"
+            >
+              {Object.entries(PRACTICE_TYPES).map(([key, value]) => (
+                <option key={key} value={value}>
+                  {value.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+            {errors.practiceType && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.practiceType.message}
               </p>
             )}
           </div>

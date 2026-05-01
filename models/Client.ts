@@ -8,6 +8,12 @@ export type TherapyType = "PHYSIOTHERAPY" | "ACUPRESSURE" | "COMBINED";
 export type ClientType = "NEW" | "REGULAR" | "ONE_TIME";
 export type ClientStatus = "ACTIVE" | "INACTIVE" | "DISCHARGED";
 
+export interface IClientDocument {
+  name: string;
+  url: string;
+  uploadedAt: Date;
+}
+
 export interface IClient extends Document {
   doctorId: mongoose.Types.ObjectId;
 
@@ -32,6 +38,9 @@ export interface IClient extends Document {
 
   medicalHistory?: string;
   diagnosis?: string;
+
+  // EHR / Documents
+  documents: IClientDocument[];
 
   // Practice types (multi-select supported)
   practiceTypes: PracticeType[];
@@ -80,8 +89,18 @@ const ClientSchema = new Schema<IClient>(
     medicalHistory: { type: String },
     diagnosis: { type: String },
 
+    // EHR / Documents
+    documents: [
+      {
+        name: { type: String },
+        url: { type: String },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     // Generic practice types (multi-select)
     practiceTypes: { type: [String], default: [] },
+
 
     // Backward compatibility
     practiceType: { type: String },

@@ -71,11 +71,14 @@ export default function LoginPage() {
               <Activity size={32} className="text-white" />
             </div>
             <div className="text-center">
-               <h1 className="text-3xl font-black text-gray-900 tracking-tighter italic">
-                 Clin<span className="text-blue-600">Desk</span>
-               </h1>
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-2">Clinic Manager</p>
+               <img 
+                 src="/logo.png" 
+                 alt="clindesk app" 
+                 className="h-12 w-auto object-contain mx-auto" 
+               />
+               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mt-3">Clinic Manager</p>
             </div>
+
           </div>
 
           <div className="mb-10 text-center">

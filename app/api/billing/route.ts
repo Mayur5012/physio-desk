@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
       clientId, sessionId,
       totalFee, amountPaid,
       paymentMode, notes, date,
+      taxPercentage, includeClinicBranding
     } = body;
 
     if (!clientId || totalFee === undefined) {
@@ -84,8 +85,11 @@ export async function POST(req: NextRequest) {
 
     const paid   = Number(amountPaid ?? 0);
     const total  = Number(totalFee);
+    const taxPct = Number(taxPercentage ?? 0);
+    const taxAmt = (total * taxPct) / 100;
+    
     const status =
-      paid >= total ? "PAID" :
+      paid >= (total + taxAmt) ? "PAID" :
       paid > 0      ? "PARTIAL" :
                       "PENDING";
 
@@ -95,11 +99,15 @@ export async function POST(req: NextRequest) {
       sessionId:   sessionId   || undefined,
       date:        date ? new Date(date) : new Date(),
       totalFee:    total,
+      taxPercentage: taxPct,
+      taxAmount:   taxAmt,
       amountPaid:  paid,
       paymentMode: paymentMode || "CASH",
       status,
       notes:       notes       || undefined,
-    } as any);
+      includeClinicBranding: includeClinicBranding ?? true,
+    });
+
 
     return NextResponse.json(
       { message: "Bill created", bill },

@@ -1,3 +1,36 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-primary: #2563eb;
+    --brand-secondary: #4f46e5;
+    --brand-accent: #06b6d4;
+    --brand-bg: #f8fafc;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .clindesk-card {
+    @apply bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 transition-all duration-300;
+  }
+  
+  .clindesk-btn-primary {
+    @apply bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] italic hover:bg-black transition-all active:scale-95 shadow-xl shadow-slate-200;
+  }
+
+  .clindesk-gradient-text {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent;
+  }
+}

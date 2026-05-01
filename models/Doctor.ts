@@ -59,10 +59,13 @@ export interface IDoctor extends Document {
   subscriptionExpiry: Date;
   razorpaySubscriptionId?: string;
   razorpayPlanId?: string;
+  currency: string;
+  region: string;
 
   createdAt: Date;
   updatedAt: Date;
 }
+
 
 const LicenseSchema = new Schema<ILicense>(
   {
@@ -120,9 +123,12 @@ const DoctorSchema = new Schema<IDoctor>(
     subscriptionExpiry:   { type: Date,    default: () => new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) }, // 3 days trial
     razorpaySubscriptionId: { type: String },
     razorpayPlanId:       { type: String },
+    currency:             { type: String, default: "INR" },
+    region:               { type: String, default: "IN" },
   },
   { timestamps: true }
 );
+
 
 const Doctor: Model<IDoctor> =
   mongoose.models.Doctor || mongoose.model<IDoctor>("Doctor", DoctorSchema);

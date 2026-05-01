@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Card from "@/components/ui/Card";
@@ -34,7 +34,22 @@ export default function AppointmentDetailPage() {
   const [newStatus,     setNewStatus]     = useState("");
   const [updating,      setUpdating]      = useState(false);
 
-  // ── Handle status update ─────────────────────────────────
+  const fetchAppointment = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/appointments/${id}`);
+      setAppointment(data.appointment);
+    } catch (err) {
+      showToast("Failed to retrieve appointment details", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, showToast]);
+
+  useEffect(() => {
+    if (id) fetchAppointment();
+  }, [id, fetchAppointment]);
+
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTime, setRescheduleTime] = useState("");
 

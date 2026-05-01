@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import Pagination from "@/components/ui/Pagination";
 
 // ─── Types ────────────────────────────────────────────────
 interface Stats {
@@ -115,26 +116,35 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Pagination for Today's Schedule
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalAppts, setTotalAppts] = useState(0);
+
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [statsRes, todayRes] = await Promise.all([
+        api.get("/dashboard/stats"),
+        api.get(`/dashboard/today?page=${page}&limit=10`),
+      ]);
+      setStats(statsRes.data);
+      setAppointments(todayRes.data.appointments);
+      setTotalPages(todayRes.data.totalPages || 1);
+      setTotalAppts(todayRes.data.total || 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [statsRes, todayRes] = await Promise.all([
-          api.get("/dashboard/stats"),
-          api.get("/dashboard/today"),
-        ]);
-        setStats(statsRes.data);
-        setAppointments(todayRes.data.appointments);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+    loadDashboard();
+  }, [loadDashboard]);
 
-  if (loading) {
+  if (loading && appointments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <Spinner size="lg" color="blue" />
@@ -144,7 +154,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto pb-20 px-2">
+    <div className="space-y-6 sm:space-y-10 max-w-7xl mx-auto pb-20 px-2 sm:px-4">
 
       {/* Hero Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative">
@@ -154,26 +164,29 @@ export default function DashboardPage() {
              <div className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md italic">Online</div>
              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight italic flex items-center gap-4">
+          <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight italic flex flex-wrap items-center gap-2 sm:gap-4">
             Overview<span className="text-blue-600">.</span>
           </h2>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+          <p className="text-[10px] sm:text-sm font-bold text-gray-400 uppercase tracking-widest">
             Clinic Performance & Summary · {format(new Date(), "EEEE, dd MMMM yyyy")}
           </p>
         </div>
         
-        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm ring-1 ring-gray-100">
-           <Link href="/appointments" className="px-6 py-2.5 bg-gray-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:shadow-xl transition-all hover:translate-y-[-1px] italic">
+        <div className="flex items-center gap-3 sm:gap-4 bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm ring-1 ring-gray-100">
+           <Link href="/appointments" className="px-4 sm:px-6 py-2.5 bg-gray-900 text-white text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl hover:shadow-xl transition-all hover:translate-y-[-1px] italic">
               + Book Appointment
            </Link>
-           <button className="p-2.5 text-gray-400 hover:text-gray-900 transition-colors">
+           <button 
+             onClick={() => loadDashboard()}
+             className="p-2.5 text-gray-400 hover:text-gray-900 transition-colors"
+           >
               <RefreshCw size={18} />
            </button>
         </div>
       </div>
 
       {/* ── Metric Grid ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <PremiumStatCard
           label="Total Patients"
           value={stats?.totalClients || 0}
@@ -211,65 +224,87 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between px-2">
              <div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight italic flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight italic flex items-center gap-2">
                    <Target size={18} className="text-blue-600" /> Today's Schedule
                 </h3>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Appointments</p>
+                <p className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Appointments · {totalAppts} total</p>
              </div>
-             <Link href="/appointments" className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] hover:opacity-70 transition-opacity">
+             <Link href="/appointments" className="text-[9px] sm:text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] hover:opacity-70 transition-opacity">
                 View All →
              </Link>
           </div>
 
-          <Card className="p-6 border-none shadow-2xl rounded-[2.5rem] bg-white ring-1 ring-gray-100 min-h-[400px]">
-            {appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-20 text-center space-y-4">
-                <div className="p-6 bg-gray-50 rounded-full text-gray-200">
-                   <CalendarDays size={48} />
+          <Card className="p-4 sm:p-6 border-none shadow-2xl rounded-[2.5rem] bg-white ring-1 ring-gray-100 min-h-[400px] flex flex-col">
+            {loading && appointments.length > 0 && (
+               <div className="flex justify-center py-4">
+                  <Spinner size="sm" color="blue" />
+               </div>
+            )}
+            
+            <div className="flex-1 space-y-4">
+              {appointments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full py-20 text-center space-y-4">
+                  <div className="p-6 bg-gray-50 rounded-full text-gray-200">
+                     <CalendarDays size={48} />
+                  </div>
+                  <div>
+                     <p className="text-sm font-black text-gray-900 italic tracking-tight">Schedule is clear</p>
+                     <p className="text-xs text-gray-400 font-medium">No appointments for today.</p>
+                  </div>
+                  <Link href="/appointments" className="text-xs font-black text-blue-600 uppercase tracking-widest mt-4">+ Book Appointment</Link>
                 </div>
-                <div>
-                   <p className="text-sm font-black text-gray-900 italic tracking-tight">Schedule is clear</p>
-                   <p className="text-xs text-gray-400 font-medium">No appointments for today.</p>
-                </div>
-                <Link href="/appointments" className="text-xs font-black text-blue-600 uppercase tracking-widest mt-4">+ Book Appointment</Link>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {appointments.map((appt) => {
-                  const ui = therapyUI[appt.clientId?.therapyType || "PHYSIOTHERAPY"];
-                  return (
-                    <div 
-                      key={appt._id} 
-                      className="flex items-center gap-6 p-4 rounded-3xl border border-gray-50 hover:bg-gray-50/80 hover:border-blue-100 hover:shadow-xl hover:translate-x-1 transition-all duration-300 group"
-                    >
-                      <div className="flex flex-col items-center justify-center p-3 bg-gray-900 text-white rounded-2xl w-24 shrink-0 shadow-lg shadow-gray-200 transition-transform group-hover:rotate-1">
-                         <p className="text-xs font-black tracking-tight">{appt.startTime}</p>
-                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter opacity-70">Time</p>
-                      </div>
-
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-3">
-                           <h4 className="text-sm font-black text-gray-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase">{appt.clientId?.name}</h4>
-                           <button onClick={() => router.push(`/appointments/${appt._id}`)} className="p-3 bg-gray-900 text-white rounded-xl shadow-xl shadow-gray-200 hover:translate-y-[-2px] transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest italic">
-                             View Details <ArrowRight size={12} />
-                           </button>
+              ) : (
+                <div className="space-y-4">
+                  {appointments.map((appt) => {
+                    const ui = therapyUI[appt.clientId?.therapyType || "PHYSIOTHERAPY"];
+                    return (
+                      <div 
+                        key={appt._id} 
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-4 rounded-3xl border border-gray-50 hover:bg-gray-50/80 hover:border-blue-100 hover:shadow-xl hover:translate-x-1 transition-all duration-300 group"
+                      >
+                        <div className="flex sm:flex-col items-center justify-between sm:justify-center p-3 bg-gray-900 text-white rounded-2xl w-full sm:w-24 shrink-0 shadow-lg shadow-gray-200 transition-transform group-hover:rotate-1">
+                           <p className="text-xs font-black tracking-tight">{appt.startTime}</p>
+                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter opacity-70">Time</p>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 tracking-tight">
-                           ID: {appt._id.slice(-6).toUpperCase()} • {appt.durationMins} mins
-                        </p>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                         <Badge
-                          variant={appt.status.toLowerCase() as any}
-                          label={appt.status.replace("_", " ")}
-                          className="px-3 py-1 text-[9px] font-black uppercase tracking-widest"
-                        />
+                        <div className="flex-1 space-y-2 sm:space-y-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                             <h4 className="text-sm font-black text-gray-900 tracking-tight italic group-hover:text-blue-600 transition-colors uppercase truncate max-w-[200px]">{appt.clientId?.name}</h4>
+                             <button onClick={() => router.push(`/appointments/${appt._id}`)} className="w-fit p-2.5 sm:p-3 bg-gray-900 text-white rounded-xl shadow-xl shadow-gray-200 hover:translate-y-[-2px] transition-all flex items-center gap-2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest italic">
+                               Details <ArrowRight size={12} />
+                             </button>
+                          </div>
+                          <p className="text-[10px] sm:text-xs font-bold text-gray-400 tracking-tight">
+                             ID: {appt._id.slice(-6).toUpperCase()} • {appt.durationMins} mins
+                          </p>
+                        </div>
+
+                        <div className="flex sm:flex-col items-center sm:items-end gap-2 ml-auto sm:ml-0">
+                           <Badge
+                            variant={appt.status.toLowerCase() as any}
+                            label={appt.status.replace("_", " ")}
+                            className="px-3 py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+               <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Page {page} of {totalPages}</p>
+                  <Pagination 
+                    page={page} 
+                    totalPages={totalPages} 
+                    onPageChange={setPage} 
+                    limit={10} 
+                    total={totalAppts} 
+                  />
+               </div>
             )}
           </Card>
         </div>

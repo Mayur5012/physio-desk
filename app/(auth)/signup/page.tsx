@@ -131,12 +131,15 @@ export default function SignupPage() {
                <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center shadow-xl shadow-gray-200 rotate-3">
                  <Activity size={24} className="text-white" />
                </div>
-               <div>
-                  <h1 className="text-2xl font-black text-gray-900 tracking-tighter italic">
-                    Clin<span className="text-blue-600">Desk</span>
-                  </h1>
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none">Clinic Manager</p>
+               <div className="flex flex-col">
+                  <img 
+                    src="/logo.png" 
+                    alt="clindesk app" 
+                    className="h-10 w-auto object-contain" 
+                  />
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mt-2">Clinic Manager</p>
                </div>
+
             </div>
           </div>
 

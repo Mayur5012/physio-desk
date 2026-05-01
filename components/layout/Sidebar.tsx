@@ -66,19 +66,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full shadow-none"}`}
       >
         {/* Logo Section */}
-        <div className="flex items-center justify-between px-7 py-8 shrink-0">
+        <div className="flex items-center justify-between px-7 pt-4 pb-6 shrink-0 border-b border-gray-50/50">
           <Link href="/dashboard" className="flex items-center gap-3.5 group">
-            {/* <div className="w-11 h-11 bg-gray-900 rounded-2xl flex items-center 
-                            justify-center shrink-0 shadow-2xl shadow-gray-200 
-                            group-hover:rotate-12 transition-transform duration-500">
-              <Activity size={22} className="text-white" />
-            </div> */}
-            <div>
-              <p className="text-lg font-black text-gray-900 tracking-tighter leading-none italic">
-                Clin<span className="text-blue-600">Desk</span>
-              </p>
-              <p className="text-[10px] font-black text-gray-400 mt-1 uppercase tracking-[0.2em] leading-none">
-                Clinic Management
+            <div className="flex flex-col relative">
+              <div className="absolute -inset-2 bg-blue-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <img 
+                src="/logo.png" 
+                alt="clindesk app" 
+                className="h-9 w-auto object-contain object-left group-hover:scale-105 transition-all duration-500 relative z-10" 
+              />
+              <p className="text-[8px] font-black text-gray-400 mt-1 uppercase tracking-[0.25em] leading-none ml-0.5 relative z-10">
+                Clinic Manager
               </p>
             </div>
           </Link>

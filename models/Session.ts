@@ -101,7 +101,9 @@ const SessionSchema = new Schema<ISession>(
 );
 
 SessionSchema.index({ doctorId: 1, clientId: 1 });
+SessionSchema.index({ doctorId: 1, createdAt: -1 });
 SessionSchema.index({ clientId: 1, createdAt: -1 });
+SessionSchema.index({ clientId: 1, sessionNumber: -1 });
 
 const Session: Model<ISession> =
   mongoose.models.Session || mongoose.model<ISession>("Session", SessionSchema);

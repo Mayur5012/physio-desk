@@ -75,14 +75,14 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
           <MenuIcon size={20} />
         </button>
 
-        <div className="space-y-0.5">
-          <h1 className="text-xl font-black text-gray-900 tracking-tight italic">
+        <div className="space-y-0.5 min-w-0">
+          <h1 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight italic truncate">
             {pageTitle}<span className="text-blue-600">.</span>
           </h1>
           {doctor?.clinicName && (
             <div className="flex items-center gap-2">
-               <div className="w-1 h-1 rounded-full bg-blue-500" />
-               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">
+               <div className="w-1 h-1 rounded-full bg-blue-500 shrink-0" />
+               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden md:block truncate">
                  {doctor.clinicName}
                </p>
             </div>
@@ -91,15 +91,15 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
       </div>
 
       {/* Right — Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         
         {/* Global Notifications Bridge */}
         <button
-          className="group relative p-3 text-gray-400 hover:text-gray-900 
-                     bg-gray-50/50 hover:bg-gray-100 rounded-2xl transition-all duration-300"
+          className="group relative p-2.5 text-gray-400 hover:text-gray-900 
+                     bg-gray-50/50 hover:bg-gray-100 rounded-xl sm:rounded-2xl transition-all duration-300"
         >
           <BellIcon size={18} className="group-hover:rotate-12 transition-transform" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 
+          <span className="absolute top-2 right-2 w-2 h-2 
                            bg-blue-600 rounded-full ring-2 ring-white animate-pulse" />
         </button>
 
@@ -109,13 +109,17 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
           >
-            <p className="text-sm font-black tracking-tight italic">
+            <p className="text-sm font-black tracking-tight italic hidden sm:block">
               {doctor?.name || "Provider"}
             </p>
             
+            <div className="sm:hidden w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-[10px] font-black italic shadow-lg">
+               {initials}
+            </div>
+
             <ChevronDownIcon
               size={14}
-              className={`transition-transform duration-300 text-gray-400
+              className={`transition-transform duration-300 text-gray-400 hidden sm:block
                           ${dropdownOpen ? "rotate-180" : ""}`}
             />
           </button>

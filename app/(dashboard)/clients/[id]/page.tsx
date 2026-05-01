@@ -19,8 +19,10 @@ const TABS = [
   { key: "overview",     label: "Overview"  },
   { key: "sessions",     label: "Sessions"   },
   { key: "appointments", label: "Schedule"  },
+  { key: "documents",    label: "Documents" },
   { key: "billing",      label: "Billing"      },
 ];
+
 
 const STATUS_STYLE: Record<string, string> = {
   PAID:    "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100",
@@ -365,9 +367,55 @@ export default function ClientProfilePage() {
             </div>
           )}
 
+          {/* ── EHR / Documents ── */}
+          {activeTab === "documents" && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <div className="flex justify-between items-center bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Clinical Records: {(client.documents?.length || 0)} files</p>
+                 <button
+                   className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest italic shadow-lg shadow-indigo-100 hover:shadow-xl transition-all"
+                 >
+                   + Upload Document
+                 </button>
+               </div>
+
+               {(!client.documents || client.documents.length === 0) ? (
+                 <div className="py-20 text-center space-y-4">
+                    <div className="p-6 bg-gray-50 rounded-full w-fit mx-auto text-gray-300"><ShieldCheck size={40} /></div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">No documents uploaded yet</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {client.documents.map((doc: any, idx: number) => (
+                      <div key={idx} className="p-6 bg-white rounded-3xl border border-gray-100 hover:border-indigo-200 hover:shadow-xl transition-all group relative overflow-hidden">
+                         <div className="flex items-start justify-between mb-4">
+                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                               <ClipboardList size={20} />
+                            </div>
+                            <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest italic">{format(new Date(doc.uploadedAt), "dd MMM yyyy")}</span>
+                         </div>
+                         <h5 className="text-sm font-black text-gray-900 italic mb-1 truncate pr-4">{doc.name}</h5>
+                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-6">Patient Report</p>
+                         <a 
+                            href={doc.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-full py-2.5 bg-gray-50 text-gray-900 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                         >
+                            View Document <ArrowRight size={12} />
+                         </a>
+                      </div>
+                    ))}
+                 </div>
+               )}
+            </div>
+          )}
+
+
           {/* ── Schedule (Appointments) ── */}
           {activeTab === "appointments" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
                <div className="flex justify-between items-center bg-gray-50 p-6 rounded-3xl border border-gray-100">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Total Appointments: {appts.length}</p>
                 <button

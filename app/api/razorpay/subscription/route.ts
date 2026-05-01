@@ -4,31 +4,24 @@ import { getAuthDoctor } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Doctor from "@/models/Doctor";
 import UserSubscription from "@/models/UserSubscription";
+import { getPricingForCountry } from "@/lib/pricing";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
-const PLAN_ID_MAP: Record<string, { id: string; amount: number }> = {
-  "plan_monthly_1": { id: process.env.RAZORPAY_PLAN_MONTHLY || "plan_M1", amount: 999 },
-  "plan_quarterly_3": { id: process.env.RAZORPAY_PLAN_QUARTERLY || "plan_Q3", amount: 2499 },
-  "plan_halfyearly_6": { id: process.env.RAZORPAY_PLAN_HALFYEARLY || "plan_H6", amount: 4499 },
-  "plan_yearly_12": { id: process.env.RAZORPAY_PLAN_YEARLY || "plan_Y12", amount: 7999 },
-};
-
 export async function POST(req: NextRequest) {
-  console.log("Subscription request received");
-  console.log("RAZORPAY_KEY_ID:", process.env.RAZORPAY_KEY_ID ? `${process.env.RAZORPAY_KEY_ID.substring(0, 10)}...` : "MISSING");
-  console.log("RAZORPAY_KEY_SECRET:", process.env.RAZORPAY_KEY_SECRET ? "PRESENT (MASKED)" : "MISSING");
-
   try {
     await connectDB();
     const doctorId = await getAuthDoctor(req);
-    const { planId } = await req.json();
+    const { planId, countryCode } = await req.json();
 
-    const rzpPlan = PLAN_ID_MAP[planId];
-    if (!rzpPlan) {
+    const pricing = getPricingForCountry(countryCode);
+    const planKey = planId.replace("plan_", ""); // "1", "6", "12"
+    const planData = pricing.plans[planKey];
+
+    if (!planData) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
@@ -37,14 +30,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
     }
 
+    // Resolve Razorpay Plan ID from environment or naming convention
+    // Format: RAZORPAY_PLAN_INR_1, RAZORPAY_PLAN_USD_6, etc.
+    const envPlanId = process.env[`RAZORPAY_PLAN_${pricing.currency}_${planKey}`];
+    const rzpPlanId = envPlanId || `plan_${pricing.currency}_${planKey}`;
+
     // Create Razorpay Subscription
     const subscription = await razorpay.subscriptions.create({
-      plan_id: rzpPlan.id,
+      plan_id: rzpPlanId,
       customer_notify: 1,
-      total_count: 12,
+      total_count: planKey === "12" ? 12 : (planKey === "6" ? 6 : 12), // Adjust as needed
       notes: {
         doctorId: doctorId,
         planId: planId,
+        country: countryCode,
+        currency: pricing.currency,
       },
     });
 
@@ -54,13 +54,14 @@ export async function POST(req: NextRequest) {
       planId: planId,
       razorpaySubscriptionId: subscription.id,
       status: "pending",
-      amount: rzpPlan.amount,
-      currency: "INR",
+      amount: planData.amount,
+      currency: pricing.currency,
     });
 
-    // Update doctor with subscription ID
+    // Update doctor with subscription ID and chosen currency/region
     doctor.razorpaySubscriptionId = subscription.id;
     doctor.razorpayPlanId = planId;
+    // We can also store the currency in the doctor model if needed
     await doctor.save();
 
     return NextResponse.json({ subscriptionId: subscription.id });
@@ -69,3 +70,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
+

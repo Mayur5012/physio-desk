@@ -117,7 +117,7 @@ export default function BillingPage() {
       </div>
 
       {/* Billing Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
         {[
           { label: "Total Billed", value: `₹${(summary.totalBilled || 0).toLocaleString("en-IN")}`, icon: IndianRupee, gradient: "from-orange-600 to-red-600", sub: "Gross Invoiced" },
           { label: "Collected", value: `₹${(summary.collectedRevenue || 0).toLocaleString("en-IN")}`, icon: TrendingUp, gradient: "from-emerald-600 to-teal-600", sub: "Cash Flow" },

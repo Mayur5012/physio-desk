@@ -60,6 +60,8 @@ const AppointmentSchema = new Schema<IAppointment>(
 );
 
 AppointmentSchema.index({ doctorId: 1, date: 1 });
+AppointmentSchema.index({ doctorId: 1, date: -1 });
+AppointmentSchema.index({ doctorId: 1, status: 1, date: 1 });
 AppointmentSchema.index({ doctorId: 1, clientId: 1 });
 AppointmentSchema.index({ recurrenceGroupId: 1 });
 
