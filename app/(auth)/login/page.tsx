@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
-import { Eye, EyeOff, Activity, ShieldCheck, Sparkles, Command } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Sparkles, Command } from "lucide-react";
 import Link from "next/link";
 import Spinner from "@/components/ui/Spinner";
 
@@ -67,9 +67,6 @@ export default function LoginPage() {
           
           {/* Brand Identity */}
           <div className="flex flex-col items-center mb-12">
-            <div className="w-16 h-16 bg-gray-900 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-2xl shadow-gray-200 rotate-3 hover:rotate-0 transition-transform duration-500">
-              <Activity size={32} className="text-white" />
-            </div>
             <div className="text-center">
                <img 
                  src="/logo.png" 

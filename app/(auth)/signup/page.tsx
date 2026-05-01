@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
-import { Eye, EyeOff, Activity, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import Link from "next/link";
 import Spinner from "@/components/ui/Spinner";
 import PhoneInput from "@/components/ui/PhoneInput";
@@ -128,9 +128,6 @@ export default function SignupPage() {
           {/* Brand Identity */}
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-4">
-               <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center shadow-xl shadow-gray-200 rotate-3">
-                 <Activity size={24} className="text-white" />
-               </div>
                <div className="flex flex-col">
                   <img 
                     src="/logo.png" 
