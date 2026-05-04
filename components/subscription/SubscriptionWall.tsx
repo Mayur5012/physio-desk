@@ -41,7 +41,7 @@ export default function SubscriptionWall({ doctorId }: { doctorId: string }) {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: data.subscriptionId,
-        name: "Physio Desk",
+        name: "Clindesk",
         description: `${planData.label} Subscription`,
         image: "/logo.png",
         handler: async function (response: any) {
