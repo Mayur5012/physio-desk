@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
             status: "active",
             currentStart: new Date(rzpSubscription.current_start * 1000),
             currentEnd: new Date(rzpSubscription.current_end * 1000),
+            nextBillingDate: new Date(rzpSubscription.current_end * 1000),
+            billingAmount: payment ? payment.amount / 100 : 0,
             $push: payment ? {
               payments: {
                 paymentId: payment.id,

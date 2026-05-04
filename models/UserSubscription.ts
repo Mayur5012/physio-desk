@@ -11,6 +11,8 @@ export interface IUserSubscription extends Document {
   currency: string;
   currentStart: Date;
   currentEnd: Date;
+  nextBillingDate?: Date;
+  billingAmount: number;
   cancelAtPeriodEnd: boolean;
   
   // Payment history for this subscription
@@ -37,6 +39,8 @@ const UserSubscriptionSchema = new Schema<IUserSubscription>(
     currency: { type: String, default: "INR" },
     currentStart: { type: Date },
     currentEnd: { type: Date },
+    nextBillingDate: { type: Date },
+    billingAmount: { type: Number },
     cancelAtPeriodEnd: { type: Boolean, default: false },
     
     payments: [

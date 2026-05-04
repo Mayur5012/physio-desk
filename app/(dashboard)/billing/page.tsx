@@ -2,7 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 import Card from "@/components/ui/Card";
+import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
+
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import Pagination from "@/components/ui/Pagination";
@@ -48,6 +51,7 @@ const modeIcon: Record<string, string> = {
 
 export default function BillingPage() {
   const router = useRouter();
+  const { doctor } = useAuthStore();
   const { toast, showToast, hideToast } = useToast();
 
   const [bills,      setBills]      = useState<Bill[]>([]);
@@ -98,7 +102,7 @@ export default function BillingPage() {
          <div className="absolute -top-10 -left-10 w-40 h-40 bg-orange-100/30 rounded-full blur-3xl -z-10" />
          <div className="space-y-1">
             <div className="flex items-center gap-2 mb-2">
-               <div className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md italic">Online</div>
+               <SubscriptionBadge doctor={doctor} />
                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             </div>
             <h2 className="text-4xl font-black text-gray-900 tracking-tight italic flex items-center gap-4">

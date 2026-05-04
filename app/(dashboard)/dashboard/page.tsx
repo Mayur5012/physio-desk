@@ -14,6 +14,8 @@ import {
 import { format } from "date-fns";
 import Link from "next/link";
 import Pagination from "@/components/ui/Pagination";
+import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
+
 
 interface Stats {
   totalClients: number;
@@ -174,7 +176,7 @@ export default function DashboardPage() {
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-100/30 rounded-full blur-3xl -z-10" />
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
-            <div className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md italic">Online</div>
+            <SubscriptionBadge doctor={doctor} />
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight italic flex flex-wrap items-center gap-2 sm:gap-4">
