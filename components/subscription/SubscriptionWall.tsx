@@ -110,13 +110,23 @@ export default function SubscriptionWall({ doctorId }: { doctorId: string }) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left max-w-6xl mx-auto">
-            {Object.entries(pricing.plans).map(([key, plan]: [string, any]) => {
-              const monthlyPrice = pricing.plans["1"].amount;
-              const planDuration = parseInt(key);
-              const totalMonthlyCost = monthlyPrice * planDuration;
-              const savings = totalMonthlyCost - plan.amount;
-              const savingsPercent = totalMonthlyCost > 0 ? Math.round((savings / totalMonthlyCost) * 100) : 0;
-              const isBestValue = key === '6';
+            {Object.entries(pricing.plans)
+              .filter(([key]) => {
+                // Only show "test" plan if ?test=true is in the URL
+                if (key === 'test') {
+                  const params = new URLSearchParams(window.location.search);
+                  return params.get('test') === 'true';
+                }
+                return true;
+              })
+              .map(([key, plan]: [string, any]) => {
+                const monthlyPrice = pricing.plans["1"].amount;
+                const isTest = key === 'test';
+                const planDuration = isTest ? 1 : parseInt(key);
+                const totalMonthlyCost = monthlyPrice * planDuration;
+                const savings = isTest ? 0 : (totalMonthlyCost - plan.amount);
+                const savingsPercent = totalMonthlyCost > 0 ? Math.round((savings / totalMonthlyCost) * 100) : 0;
+                const isBestValue = key === '6';
 
               return (
                 <div 

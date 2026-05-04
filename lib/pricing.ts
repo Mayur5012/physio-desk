@@ -7,6 +7,7 @@ export const PRICING_TIERS: Record<string, any> = {
       "1": { amount: 1680, label: "1 Month" },
       "6": { amount: 9173, label: "6 Months" },
       "12": { amount: 17741, label: "12 Months" },
+      "test": { amount: 1, label: "Test Plan (₹1)" },
     },
   },
   US: {
@@ -17,6 +18,7 @@ export const PRICING_TIERS: Record<string, any> = {
       "1": { amount: 19, label: "1 Month" },
       "6": { amount: 103, label: "6 Months" },
       "12": { amount: 199, label: "12 Months" },
+      "test": { amount: 1, label: "Test Plan ($1)" },
     },
   },
   EU: {
@@ -27,6 +29,7 @@ export const PRICING_TIERS: Record<string, any> = {
       "1": { amount: 18, label: "1 Month" },
       "6": { amount: 98, label: "6 Months" },
       "12": { amount: 189, label: "12 Months" },
+      "test": { amount: 1, label: "Test Plan (€1)" },
     },
   },
 };
