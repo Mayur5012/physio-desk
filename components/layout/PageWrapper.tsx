@@ -28,18 +28,20 @@ export default function PageWrapper({ children, doctor }: PageWrapperProps) {
   const [showTour, setShowTour] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
   const currentToken = useAuthStore((s) => s.accessToken);
+  const isTourOpen = useAuthStore((s) => s.isTourOpen);
+  const setIsTourOpen = useAuthStore((s) => s.setIsTourOpen);
 
   useEffect(() => {
     if (doctor) {
       // Always trust the server-side doctor data
       setAuth(doctor as any, currentToken || "");
       
-      // Trigger tour if never seen before
-      if (!doctor.hasSeenTour) {
+      // Trigger tour if never seen before OR if manually triggered from header
+      if (!doctor.hasSeenTour || isTourOpen) {
         setShowTour(true);
       }
     }
-  }, [doctor, setAuth]); 
+  }, [doctor, setAuth, isTourOpen]); 
 
 
 
@@ -65,7 +67,10 @@ export default function PageWrapper({ children, doctor }: PageWrapperProps) {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 relative">
           {children}
           {showTour && (
-            <OnboardingTour onComplete={() => setShowTour(false)} />
+            <OnboardingTour onComplete={() => {
+              setShowTour(false);
+              setIsTourOpen(false);
+            }} />
           )}
         </main>
       </div>

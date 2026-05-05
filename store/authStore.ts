@@ -15,8 +15,10 @@ interface Doctor {
 interface AuthState {
   doctor: Doctor | null;
   accessToken: string | null;
+  isTourOpen: boolean;
   setAuth: (doctor: Doctor, token: string) => void;
   setToken: (token: string) => void;
+  setIsTourOpen: (open: boolean) => void;
   clearAuth: () => void;
 }
 
@@ -25,9 +27,11 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       doctor: null,
       accessToken: null,
+      isTourOpen: false,
       setAuth: (doctor, accessToken) => set({ doctor, accessToken }),
       setToken: (accessToken) => set({ accessToken }),
-      clearAuth: () => set({ doctor: null, accessToken: null }),
+      setIsTourOpen: (isTourOpen) => set({ isTourOpen }),
+      clearAuth: () => set({ doctor: null, accessToken: null, isTourOpen: false }),
     }),
     {
       name: "physio-auth",

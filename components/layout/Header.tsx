@@ -2,9 +2,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 import {
   Bell as BellIcon, Menu as MenuIcon, User as UserIcon, LogOut as LogOutIcon, 
-  Settings as SettingsIcon, ChevronDown as ChevronDownIcon, Activity, Sparkles
+  Settings as SettingsIcon, ChevronDown as ChevronDownIcon, Sparkles
 } from "lucide-react";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -25,6 +26,7 @@ interface HeaderProps {
 export default function Header({ onMenuClick, doctor }: HeaderProps) {
   const router   = useRouter();
   const pathname = usePathname();
+  const setIsTourOpen = useAuthStore((s) => s.setIsTourOpen);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -145,13 +147,25 @@ export default function Header({ onMenuClick, doctor }: HeaderProps) {
               <div className="space-y-1">
                 <button
                   onClick={() => {
+                    setIsTourOpen(true);
+                    setDropdownOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 
+                             text-[11px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                >
+                  <Sparkles size={14} />
+                  Take Tour
+                </button>
+
+                <button
+                  onClick={() => {
                     setDropdownOpen(false);
                     router.push("/settings");
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 
                              text-[11px] font-black uppercase tracking-widest text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
                 >
-                  <SettingsIcon size={14} className="text-blue-500" />
+                  <SettingsIcon size={14} />
                   Settings
                 </button>
 
