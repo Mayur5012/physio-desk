@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import Toast, { useToast } from "@/components/ui/Toast";
+import { useAuthStore } from "@/store/authStore";
+
 import {
   Building2, User, Phone, MapPin, Bell, CalendarClock, Briefcase, CreditCard,
   AlertTriangle, Shield, Trash2, Save, Plus, Mail, Award, Clock
