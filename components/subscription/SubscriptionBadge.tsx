@@ -21,35 +21,38 @@ export default function SubscriptionBadge({ doctor }: SubscriptionBadgeProps) {
   let colorClass = "bg-blue-600";
   let subtitle = "";
 
+  const getTimeRemaining = (targetDate: Date) => {
+    const monthsLeft = differenceInMonths(targetDate, now);
+    if (monthsLeft > 0) {
+      return `(${monthsLeft} month${monthsLeft > 1 ? "s" : ""} left)`;
+    }
+    const daysLeft = differenceInDays(targetDate, now);
+    return daysLeft > 0 ? `(${daysLeft} day${daysLeft > 1 ? "s" : ""} left)` : "(Ending soon)";
+  };
+
   if (status === "active") {
     label = "Active";
     colorClass = "bg-emerald-600";
-    if (expiry) {
-      const monthsLeft = differenceInMonths(expiry, now);
-      if (monthsLeft > 0) {
-        subtitle = `(${monthsLeft} month${monthsLeft > 1 ? "s" : ""} left)`;
-      } else {
-        const daysLeft = differenceInDays(expiry, now);
-        subtitle = `(${daysLeft} day${daysLeft > 1 ? "s" : ""} left)`;
-      }
-    }
+    if (expiry) subtitle = getTimeRemaining(expiry);
+  } else if (status === "canceled") {
+    label = "Canceled";
+    colorClass = "bg-orange-500";
+    if (expiry) subtitle = getTimeRemaining(expiry);
   } else if (status === "expired") {
     label = "Expired";
     colorClass = "bg-red-600";
+    subtitle = "(Action required)";
   } else {
-    // Trial logic
+    // Default to Trial
     label = "Trial";
-    colorClass = "bg-orange-600";
+    colorClass = "bg-blue-600";
     const trialDays = 3;
     const fallbackExpiry = created 
       ? new Date(created.getTime() + trialDays * 24 * 60 * 60 * 1000)
       : null;
     
     const targetDate = expiry || fallbackExpiry;
-    if (targetDate) {
-      const daysLeft = differenceInDays(targetDate, now);
-      subtitle = daysLeft > 0 ? `(${daysLeft} day${daysLeft > 1 ? "s" : ""} left)` : "(Ending soon)";
-    }
+    if (targetDate) subtitle = getTimeRemaining(targetDate);
   }
 
   return (
