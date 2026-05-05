@@ -24,8 +24,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Cancel in Razorpay
-    // Setting cancel_at_cycle_end: 1 ensures the user keeps access until their paid period ends
-    await razorpay.subscriptions.cancel(doctor.razorpaySubscriptionId, false); // second param is cancel_at_cycle_end
+    // cancel_at_cycle_end: 1 ensures the user keeps access until their paid period ends
+    // and only stops future autopay/renewals.
+    await razorpay.subscriptions.cancel(doctor.razorpaySubscriptionId, {
+      cancel_at_cycle_end: 1,
+    });
 
     // Update locally
     doctor.subscriptionStatus = "canceled";

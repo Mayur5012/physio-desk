@@ -8,6 +8,8 @@ import {
   ChevronRight, LogOut, Sparkles
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
+
 
 const NAV_ITEMS = [
   { href: "/dashboard",    label: "Dashboard",    icon: LayoutDashboard, color: "text-blue-500" },
@@ -28,6 +30,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
+  const doctor = useAuthStore((state) => state.doctor);
+
 
   // Close sidebar on route change (mobile)
   useEffect(() => { onClose(); }, [pathname]);
@@ -93,14 +97,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Global Search Mockup or Status */}
         <div className="px-6 mb-6">
-           <div className="relative group">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                 <Sparkles size={14} className="text-blue-500 animate-pulse" />
-              </div>
-              <div className="w-full bg-gray-50/50 border border-gray-100 py-2.5 pl-9 pr-4 rounded-xl text-[11px] font-black tracking-widest text-gray-400 uppercase italic cursor-default hover:bg-gray-100 transition-colors">
-                 Online
-              </div>
-           </div>
+           <SubscriptionBadge doctor={doctor} />
         </div>
 
         {/* Navigation Items */}

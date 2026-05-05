@@ -6,6 +6,9 @@ interface Doctor {
   name: string;
   email: string;
   clinicName: string;
+  subscriptionStatus?: string;
+  subscriptionExpiry?: string | null;
+  createdAt?: string | null;
 }
 
 interface AuthState {
