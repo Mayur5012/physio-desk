@@ -9,10 +9,12 @@ import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
 import Toast, { useToast } from "@/components/ui/Toast";
 import {
-  Save, Trash2, Plus, Settings, Clock, Shield, Mail, Award,
-  Building2, User, Phone, MapPin, Bell, CalendarClock, Briefcase
+  Building2, User, Phone, MapPin, Bell, CalendarClock, Briefcase, CreditCard,
+  AlertTriangle
 } from "lucide-react";
 import { PRACTICE_TYPES, getPracticeConfig } from "@/lib/constants";
+import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
+
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -22,15 +24,23 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
+  const [cancelling, setCancelling] = useState(false);
+  const [subDetails, setSubDetails] = useState<any>(null);
+
 
   // ── Load doctor profile ───────────────────────────────────
-  useEffect(() => {
     api
       .get("/auth/profile")
       .then(({ data }) => setDoctor(data))
       .catch(() => showToast("Failed to load settings", "error"))
       .finally(() => setLoading(false));
+
+    // Load subscription details if on billing tab
+    api.get("/razorpay/subscription/details")
+      .then(({ data }) => setSubDetails(data))
+      .catch(() => {});
   }, []);
+
 
   // ── Handle profile update ─────────────────────────────────
   const handleProfileUpdate = async () => {
@@ -94,6 +104,27 @@ export default function SettingsPage() {
     setDoctor({ ...doctor, licenses: updatedLicenses });
   };
 
+  // ── Handle cancel subscription ───────────────────────────
+  const handleCancelSubscription = async () => {
+    if (!confirm("Are you sure you want to cancel your subscription? You will keep access until the end of your billing cycle, but your plan will not renew automatically.")) {
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      const { data } = await api.post("/razorpay/subscription/cancel");
+      showToast(data.message, "success");
+      // Refresh data
+      const { data: profile } = await api.get("/auth/profile");
+      setDoctor(profile);
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to cancel subscription", "error");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-96 space-y-4">
@@ -123,7 +154,9 @@ export default function SettingsPage() {
     { key: "schedule", label: "Schedule", icon: <Clock size={18} /> },
     { key: "comm", label: "Email Settings", icon: <Mail size={18} /> },
     { key: "reminders", label: "Reminders", icon: <Bell size={18} /> },
+    { key: "billing", label: "Billing", icon: <CreditCard size={18} /> },
   ];
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
@@ -657,7 +690,93 @@ export default function SettingsPage() {
              </div>
           </Card>
         )}
+        {/* ── BILLING & SUBSCRIPTION ── */}
+        {activeTab === "billing" && (
+          <div className="space-y-8 max-w-4xl">
+            <Card className="p-10 border-none shadow-2xl rounded-[3rem] bg-white relative overflow-hidden ring-1 ring-gray-100">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-40" />
+              
+              <div className="relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12 pb-6 border-b border-gray-50">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-emerald-600 text-white rounded-3xl shadow-xl shadow-emerald-100">
+                      <CreditCard size={28} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight italic">Subscription Status</h3>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manage your payments</p>
+                    </div>
+                  </div>
+                  <SubscriptionBadge doctor={doctor} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-8">
+                    <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 italic">Current Plan</p>
+                      <p className="text-xl font-black text-gray-900 italic tracking-tight">
+                        {doctor.razorpayPlanId?.includes('test') ? 'Standard Plan (Test)' : 'Physio Desk Premium'}
+                      </p>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Full access to all clinic features</p>
+                    </div>
+
+                    <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 italic">Next Billing Date</p>
+                      <p className="text-xl font-black text-gray-900 italic tracking-tight">
+                        {doctor.subscriptionExpiry ? new Date(doctor.subscriptionExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'No active renewal'}
+                      </p>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Automated renewal via Razorpay</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-between">
+                    <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
+                       <h5 className="font-black text-blue-900 italic mb-2 tracking-tight flex items-center gap-2">
+                         <Shield size={16} /> Secure Billing
+                       </h5>
+                       <p className="text-xs text-blue-700/70 font-medium leading-relaxed">
+                          Your payments are processed securely by Razorpay. You can cancel your subscription at any time to prevent future renewals.
+                       </p>
+                    </div>
+
+                    {doctor.subscriptionStatus === 'active' && (
+                      <div className="mt-8">
+                        <button
+                          disabled={cancelling}
+                          onClick={handleCancelSubscription}
+                          className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-red-600 border-2 border-red-50 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-all"
+                        >
+                          {cancelling ? <Spinner size="sm" color="red" /> : (
+                            <>
+                              <Trash2 size={16} />
+                              Cancel Subscription
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {doctor.subscriptionStatus === 'canceled' && (
+              <Card className="p-8 border-none bg-orange-50 border border-orange-100 rounded-3xl flex items-start gap-4">
+                <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl shrink-0">
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-orange-900 uppercase tracking-tight">Subscription Set to Expire</h4>
+                  <p className="text-xs text-orange-700/80 mt-1 font-medium leading-relaxed">
+                    You have cancelled your subscription. You will retain access until <strong>{new Date(doctor.subscriptionExpiry).toLocaleDateString()}</strong>. After this date, your account will be locked.
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
+
 
       {toast && (
         <Toast

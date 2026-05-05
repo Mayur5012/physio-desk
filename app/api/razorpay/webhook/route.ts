@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
         const payment = event.payload.payment?.entity;
 
         const sub = await UserSubscription.findOneAndUpdate(
-          { razorpaySubscriptionId: rzpSubscription.id },
+          { 
+            razorpaySubscriptionId: rzpSubscription.id,
+            "payments.paymentId": { $ne: payment?.id } // Idempotency Check
+          },
           {
             status: "active",
             currentStart: new Date(rzpSubscription.current_start * 1000),
@@ -58,14 +61,19 @@ export async function POST(req: NextRequest) {
               }
             } : {},
           },
-          { upsert: true, new: true }
+          { upsert: false, new: true }
         );
 
-        // Update Doctor status
-        await Doctor.findByIdAndUpdate(sub.doctorId, {
-          subscriptionStatus: "active",
-          subscriptionExpiry: new Date(rzpSubscription.current_end * 1000),
-        });
+        // If no document was updated because paymentId already exists, 
+        // just find the sub normally to proceed with Doctor update
+        const finalSub = sub || await UserSubscription.findOne({ razorpaySubscriptionId: rzpSubscription.id });
+
+        if (finalSub) {
+          await Doctor.findByIdAndUpdate(finalSub.doctorId, {
+            subscriptionStatus: "active",
+            subscriptionExpiry: new Date(rzpSubscription.current_end * 1000),
+          });
+        }
         break;
       }
 
