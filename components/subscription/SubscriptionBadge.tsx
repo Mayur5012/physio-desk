@@ -3,7 +3,7 @@ import { formatDistanceToNow, differenceInDays, differenceInMonths, parseISO } f
 
 interface SubscriptionBadgeProps {
   doctor?: {
-    subscriptionStatus: string;
+    subscriptionStatus?: string;
     subscriptionExpiry?: string | Date | null;
     createdAt?: string | Date | null;
   } | null;

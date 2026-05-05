@@ -10,7 +10,7 @@ import Spinner from "@/components/ui/Spinner";
 import Toast, { useToast } from "@/components/ui/Toast";
 import {
   Building2, User, Phone, MapPin, Bell, CalendarClock, Briefcase, CreditCard,
-  AlertTriangle
+  AlertTriangle, Shield, Trash2, Save, Plus, Mail, Award, Clock
 } from "lucide-react";
 import { PRACTICE_TYPES, getPracticeConfig } from "@/lib/constants";
 import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
@@ -29,6 +29,7 @@ export default function SettingsPage() {
 
 
   // ── Load doctor profile ───────────────────────────────────
+  useEffect(() => {
     api
       .get("/auth/profile")
       .then(({ data }) => setDoctor(data))

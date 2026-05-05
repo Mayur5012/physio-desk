@@ -23,12 +23,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No active subscription found" }, { status: 404 });
     }
 
-    // Cancel in Razorpay
-    // cancel_at_cycle_end: 1 ensures the user keeps access until their paid period ends
-    // and only stops future autopay/renewals.
-    await razorpay.subscriptions.cancel(doctor.razorpaySubscriptionId, {
-      cancel_at_cycle_end: 1,
-    });
+    // Force cancel at cycle end (using any to bypass strict SDK type conflicts)
+    // @ts-ignore
+    await razorpay.subscriptions.cancel(doctor.razorpaySubscriptionId, true as any);
 
     // Update locally
     doctor.subscriptionStatus = "canceled";
