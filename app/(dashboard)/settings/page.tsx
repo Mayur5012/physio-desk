@@ -149,21 +149,30 @@ export default function SettingsPage() {
 
   const tabs = [
     { key: "profile", label: "Profile", icon: <Building2 size={18} /> },
+    { key: "billing", label: "Billing", icon: <CreditCard size={18} /> },
     { key: "specializations", label: "Services", icon: <Award size={18} /> },
     { key: "licenses", label: "Licenses", icon: <Shield size={18} /> },
     { key: "schedule", label: "Schedule", icon: <Clock size={18} /> },
     { key: "comm", label: "Email Settings", icon: <Mail size={18} /> },
     { key: "reminders", label: "Reminders", icon: <Bell size={18} /> },
-    { key: "billing", label: "Billing", icon: <CreditCard size={18} /> },
   ];
 
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-20">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute top-0 right-0 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center gap-3">
-           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3 italic">
+            Settings<span className="text-blue-600">.</span>
+          </h2>
+          <p className="text-gray-500 max-w-lg text-sm sm:text-base">
+            Manage your clinic's profile, schedule, and automation settings.
+          </p>
+        </div>
+
+        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center gap-3 w-fit">
+           <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black overflow-hidden shrink-0">
               {doctor.logoUrl ? (
                 <img src={doctor.logoUrl} alt="Logo" className="w-full h-full object-cover" />
               ) : (
@@ -171,17 +180,9 @@ export default function SettingsPage() {
               )}
            </div>
            <div>
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-tighter">Verified Provider</p>
-              <p className="text-sm font-black text-gray-900">{doctor.name}</p>
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">Verified Provider</p>
+              <p className="text-sm font-black text-gray-900 leading-none">{doctor.name}</p>
            </div>
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3 italic">
-            Settings<span className="text-blue-600">.</span>
-          </h2>
-          <p className="text-gray-500 max-w-lg">
-            Manage your clinic's profile, schedule, and automation settings.
-          </p>
         </div>
       </div>
 

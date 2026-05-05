@@ -1,15 +1,35 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import { useAuthStore } from "@/store/authStore";
+
 
 interface PageWrapperProps {
   children: React.ReactNode;
-  doctor?:  { name: string; clinicName: string; email: string };
+  doctor?:  { 
+    id: string;
+    name: string; 
+    clinicName: string; 
+    email: string;
+    subscriptionStatus?: string;
+    subscriptionExpiry?: string | null;
+    createdAt?: string | null;
+  };
 }
+
 
 export default function PageWrapper({ children, doctor }: PageWrapperProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const currentToken = useAuthStore((s) => s.accessToken);
+
+  useEffect(() => {
+    if (doctor && currentToken) {
+      setAuth(doctor as any, currentToken);
+    }
+  }, [doctor, currentToken, setAuth]);
+
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
