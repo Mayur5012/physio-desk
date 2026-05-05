@@ -9,6 +9,7 @@ interface Doctor {
   subscriptionStatus?: string;
   subscriptionExpiry?: string | null;
   createdAt?: string | null;
+  hasSeenTour?: boolean;
 }
 
 interface AuthState {

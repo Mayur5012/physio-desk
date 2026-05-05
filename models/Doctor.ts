@@ -61,6 +61,7 @@ export interface IDoctor extends Document {
   razorpayPlanId?: string;
   currency: string;
   region: string;
+  hasSeenTour: boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -125,6 +126,7 @@ const DoctorSchema = new Schema<IDoctor>(
     razorpayPlanId:       { type: String },
     currency:             { type: String, default: "INR" },
     region:               { type: String, default: "IN" },
+    hasSeenTour:          { type: Boolean, default: false },
   },
   { timestamps: true }
 );

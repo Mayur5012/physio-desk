@@ -110,6 +110,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Link
                 key={href}
                 href={href}
+                id={`tour-${href.replace("/", "") || "dashboard"}`}
                 className={`flex items-center gap-4 px-4 py-3.5 rounded-[1.25rem] 
                             text-sm transition-all duration-300 relative group
                             ${isActive

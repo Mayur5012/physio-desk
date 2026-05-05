@@ -16,7 +16,7 @@ async function getDoctor() {
     await connectDB();
 
     const doctor = await Doctor.findById(payload.doctorId)
-      .select("name email clinicName subscriptionStatus subscriptionExpiry createdAt")
+      .select("name email clinicName subscriptionStatus subscriptionExpiry createdAt hasSeenTour")
       .lean() as any;
 
     if (!doctor) return undefined;
@@ -29,6 +29,7 @@ async function getDoctor() {
       subscriptionStatus: doctor.subscriptionStatus || 'trial',
       subscriptionExpiry: doctor.subscriptionExpiry ? new Date(doctor.subscriptionExpiry).toISOString() : null,
       createdAt: doctor.createdAt ? new Date(doctor.createdAt).toISOString() : null,
+      hasSeenTour: doctor.hasSeenTour || false,
     };
   } catch {
     return undefined;
