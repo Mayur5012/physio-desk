@@ -19,6 +19,9 @@ import SubscriptionBadge from "@/components/subscription/SubscriptionBadge";
 export default function SettingsPage() {
   const router = useRouter();
   const { toast, showToast, hideToast } = useToast();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const currentToken = useAuthStore((s) => s.accessToken);
+
 
   const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,9 +35,13 @@ export default function SettingsPage() {
   useEffect(() => {
     api
       .get("/auth/profile")
-      .then(({ data }) => setDoctor(data))
+      .then(({ data }) => {
+        setDoctor(data);
+        if (currentToken) setAuth(data, currentToken);
+      })
       .catch(() => showToast("Failed to load settings", "error"))
       .finally(() => setLoading(false));
+
 
     // Load subscription details if on billing tab
     api.get("/razorpay/subscription/details")
@@ -48,7 +55,9 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       await api.put("/auth/profile", doctor);
+      if (currentToken) setAuth(doctor, currentToken);
       showToast("Settings saved successfully", "success");
+
     } catch (error: any) {
       showToast(error.response?.data?.error || "Failed to save settings", "error");
     } finally {

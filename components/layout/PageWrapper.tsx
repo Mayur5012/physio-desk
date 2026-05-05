@@ -25,10 +25,11 @@ export default function PageWrapper({ children, doctor }: PageWrapperProps) {
   const currentToken = useAuthStore((s) => s.accessToken);
 
   useEffect(() => {
-    if (doctor && currentToken) {
-      setAuth(doctor as any, currentToken);
+    if (doctor) {
+      // Always trust the server-side doctor data
+      setAuth(doctor as any, currentToken || "");
     }
-  }, [doctor, currentToken, setAuth]);
+  }, [doctor, setAuth]); // Only depend on doctor and setAuth
 
 
   return (

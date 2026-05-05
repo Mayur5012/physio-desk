@@ -30,8 +30,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "physio-auth",
-      // Only persist doctor info, not the access token
-      partialize: (state) => ({ doctor: state.doctor }),
+      // Persist doctor info and access token
+      partialize: (state) => ({ 
+        doctor: state.doctor, 
+        accessToken: state.accessToken 
+      }),
     }
   )
 );
