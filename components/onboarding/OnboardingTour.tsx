@@ -82,27 +82,23 @@ export default function OnboardingTour({
       setTimeout(() => {
         const element = document.getElementById(step.targetId);
         if (element) {
-          const rect = element.getBoundingClientRect();
-          setCoords({
-            top: rect.top,
-            left: rect.left,
-            width: rect.width,
-            height: rect.height
-          });
-          setIsVisible(true);
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => {
+            const rect = element.getBoundingClientRect();
+            setCoords({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+            setIsVisible(true);
+          }, 400);
         }
       }, 400);
     } else {
       const element = document.getElementById(step.targetId);
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        setCoords({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        });
-        setIsVisible(true);
+      if (element && step.targetId !== "center") {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => {
+          const rect = element.getBoundingClientRect();
+          setCoords({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+          setIsVisible(true);
+        }, 400);
       } else {
         setIsVisible(true);
       }
