@@ -152,7 +152,7 @@ export default function OnboardingTour({
   };
 
   return (
-    <div className="fixed inset-0 z-[999] pointer-events-none overflow-hidden">
+    <div className={`fixed inset-0 z-[9999] pointer-events-none overflow-hidden ${isCentered ? "flex items-center justify-center p-4" : ""}`}>
       {/* Precision Mask Overlay - Excludes the spotlight area from blur/dimming */}
       <div 
         className="absolute inset-0 bg-gray-900/60 backdrop-blur-[3px] pointer-events-auto transition-all duration-500 ease-in-out"
@@ -186,9 +186,9 @@ export default function OnboardingTour({
 
       {/* Tour Card */}
       <div
-        className={`absolute z-[1001] w-[90%] max-w-[380px] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-gray-100 p-8 sm:p-10 pointer-events-auto transition-all duration-700 ease-out flex flex-col
+        className={`z-[1001] w-full max-w-[380px] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.4)] border border-gray-100 p-8 sm:p-10 pointer-events-auto transition-all duration-700 ease-out flex flex-col
           ${isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"}
-          ${isCentered ? "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" : "-translate-y-1/2"}`}
+          ${isCentered ? "relative" : "absolute -translate-y-1/2"}`}
         style={getCardStyle()}
       >
         <div className="flex items-center justify-between mb-8">
