@@ -67,10 +67,13 @@ export default function PageWrapper({ children, doctor }: PageWrapperProps) {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 relative">
           {children}
           {showTour && (
-            <OnboardingTour onComplete={() => {
-              setShowTour(false);
-              setIsTourOpen(false);
-            }} />
+            <OnboardingTour 
+              onComplete={() => {
+                setShowTour(false);
+                setIsTourOpen(false);
+              }} 
+              setSidebarOpen={setSidebarOpen}
+            />
           )}
         </main>
       </div>
